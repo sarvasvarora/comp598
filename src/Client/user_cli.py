@@ -2,8 +2,8 @@ import json
 import requests
 
 
-# TODO These need to be modified with the RM server info
-api_host = '127.0.0.1'
+# RM is running on 'winter2023-comp598-group05-01.cs.mcgill.ca'
+api_host = '10.140.17.113'
 api_port = '8000'
 
 # Calls the RestAPI with the right parameters for each cli command
