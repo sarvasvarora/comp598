@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from typing import Union
 from pydantic import BaseModel
 from typing import Optional, List
+import socket
+
+proxy_host = "10.140.17.114"
+proxy_port = 8000
+socket = socket.socket()
 
 class Node(BaseModel):
     name: str
@@ -32,6 +37,11 @@ def read_root():
 @app.get("/init/")
 def init():
     # Do all the setup here
+    socket.connect((proxy_host, proxy_port))
+    msg = "init"
+    socket.send(msg.encode())
+    
+    # Should return the proxy response below
     return {"Initializing Setup"}
 
 @app.get("/pods/")
@@ -81,3 +91,16 @@ def delete_node(job_id: int):
     # Make docker cmd call to remove pod
     jobQueue.pop(job_id)
     return {"job": [f"delete job {job_id}\n"]}
+
+def connectThroughProxy():
+    headers = "" # Should define the headers here
+    try:
+        s = socket.socket()
+        s.connect((host,port))
+        s.send(headers.encode('utf-8'))
+        response = s.recv(3000)
+        print (response)
+        s.close()
+    except socket.error as m:
+       print (str(m))
+       s.close() 
