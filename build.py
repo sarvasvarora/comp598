@@ -16,3 +16,4 @@ def set_properties(project):
     project.depends_on("fastapi")
     project.depends_on("pydantic")
     project.depends_on("uvicorn")
+    project.depends_on("typer[all]")
