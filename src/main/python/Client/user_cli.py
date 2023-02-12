@@ -10,7 +10,7 @@ api_port = '8000'
 def execute_cmd(cmd):
     if cmd.strip() == "cloud init":
         res = requests.get(f'http://{api_host}:{api_port}/init/')
-        print(res)
+        print(res.text)
         return res
     elif (cmd.strip()).startswith('cloud pod register'):
         pod_name = ((cmd.strip()).split())[3]
@@ -18,7 +18,7 @@ def execute_cmd(cmd):
             print ('POD_NAME required for registering a pod')
             return
         res = requests.post(f'http://{api_host}:{api_port}/pods/', json={'name':pod_name}, headers={"Content-Type": "application/json", "accept":"application/json"})
-        print(res)
+        print(res.text)
         return res
     elif (cmd.strip()).startswith('cloud pod rm'):
         pod_name = ((cmd.strip()).split())[3]
@@ -26,7 +26,7 @@ def execute_cmd(cmd):
             print ('POD_NAME required for removing a pod')
             return
         res = requests.delete(f'http://{api_host}:{api_port}/pods/{pod_name}')
-        print(res)
+        print(res.text)
         return res
     elif (cmd.strip()).startswith('cloud register'):
         s = (cmd.strip()).split()
