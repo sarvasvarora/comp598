@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi import File, UploadFile
 from typing import Union
 from pydantic import BaseModel
 from typing import Optional, List
@@ -11,9 +12,13 @@ proxy_port = 8000
 socket = socket.socket()
 defaultCluster = None
 defaultPod = None
-pods = {}   # key: pod_name      value: pod object
-nodes = {}  # key: node_name     value: node object
-jobQueue = []
+job_id_tracker = 0
+pods = {}           # key: pod_name      value: pod object
+nodes = {}          # key: node_name     value: node object
+jobs = {}           # key: job_id        value: job object
+jobQueue = []       # Stores JobId of job objects that are waiting
+idle_nodes = []     # Stores nodeName of idle nodes 
+running_nodes = []  # Stores (nodeName, jobID) of running nodes and what job they are running
 
 class Cluster(BaseModel):
     name: str
@@ -33,8 +38,8 @@ class ResourcePod(BaseModel):
 
 class Job(BaseModel):
     jobId: int
-    status: str
-    path: str
+    status: str 
+    file: UploadFile
 
 app = FastAPI()
 
@@ -98,21 +103,29 @@ def read_nodes():
 
 @app.post("/nodes/")
 def create_node(node: Node):
+    global idle_nodes
     if node.pod_name in pods:
         # TODO Add support for varrying size of containers
         message2send = {'cmd': 'node register', 'node_name': node.name , 'pod_name': node.pod_name}
         socket.send(json.dumps(message2send, default=str).encode('utf-8'))
         resp = json.loads(socket.recv(8192).decode('utf-8'))
         print(resp)
-        node.status = 'idle'
-        nodes[node.name] = node
-
-        # Check if there is anything to be assigned to the node
-        if jobQueue:
-            # This function will update the jobs, and node status + making the docker call
-            assignJobToNode(jobQueue.pop(0), node)
         
-        return node
+        if resp['status'] == 200:
+            # Node registration was successfull 
+            node.status = 'idle'
+            nodes[node.name] = node
+            idle_nodes.append(node.name)
+            print(idle_nodes)
+
+            # Check if there is anything to be assigned to the node
+            if jobQueue:
+                # This function will update the jobs, and node status + making the docker call
+                assignJobToNode(jobs[jobQueue.pop(0)], node)
+            
+            return node
+        else: 
+            return f"An error occured while registering node {node.name} on RP"
     else:
         return f"Error. A pod with id {node.pod_name} does not exists"
 
@@ -128,6 +141,7 @@ def delete_node(node_name: str):
 
             parent_pod = pods[node.pod_name]
             removeNodesFromPodList([node.name],parent_pod)
+            idle_nodes.remove(node.name)
             nodes.pop(node_name)
 
         else:
@@ -137,19 +151,83 @@ def delete_node(node_name: str):
 
 @app.get("/jobs/")
 def read_jobs():
-    return {"Jobs": jobQueue}
+    return jobs
 
 @app.post("/jobs/")
-def create_job(job: Job):
-    # Make docker cmd call to create node
-    jobQueue.append(job)
-    return job
+def launch_job(file: UploadFile = File(...)):
+    global idle_nodes
+    global running_nodes
+    try:
+        contents = file.file.read()
+        with open(file.filename, 'wb') as f:
+            f.write(contents)
+    except Exception:
+        return {"message": "An error occurred uploading the file"}
+    finally:
+        file.file.close()
+    
+    # Create job object
+    global job_id_tracker
+    job_id_tracker += 1
+    job = Job(jobId=job_id_tracker, status='Registered', file=file)
+    jobs[job.jobId] = job
+
+    n = getFirstAvailableNode()
+
+    # If no idle node -> place the job in the queue
+    if not n:
+        jobQueue.append(job.jobId)
+        print(f"No idle node at the moment. Placed the job in the waiting queue")
+        # TODO Once the job is taken out of the jobqueue, notify the user!
+    else:
+        # Status updates 
+        n.status = 'Running'
+        job.status = 'Running'
+        idle_nodes.remove(n.name)
+        running_nodes.append((n.name, job.jobId))
+
+        # make call to proxy [should be non-blocking for user]
+        # TODO Make this piece async
+        with open(file.filename, 'r') as f:
+            data = f.read()
+        message2send = {'cmd': 'job launch', 'node_name': n.name , 'job_id': job.jobId, 'file': data}
+        socket.send(json.dumps(message2send, default=str).encode('utf-8'))
+        resp = json.loads(socket.recv(8192).decode('utf-8'))
+        print(resp)
+        if resp['status'] == 200:
+            return {"message": f"Successfully dispatched and completed job {job.jobId}"}
+            n.status = 'idle'
+            job.status = 'Completed'
+            running_nodes.remove((n.name,job.jobId))
+            idle_nodes.append(n.name)
+        else:
+            return {"message": f"Successfully dispatched job {job.jobId} but an error happened while running the job"}
 
 @app.delete("/jobs/{job_id}")
-def delete_node(job_id: int):
-    # Make docker cmd call to remove pod
-    jobQueue.pop(job_id)
-    return {"job": [f"delete job {job_id}\n"]}
+def abort_job(job_id: int):
+    if not job_id in jobs:
+        return f"No job with id {job_id}"
+    if jobs[job_id].status == 'Completed':
+        return f"Cannot abort job {job_id} as it is already completed"
+    if jobs[job_id].status == 'Registered':
+        jobQueue.remove(job_id)
+        return f"Aborted job {job_id} successfully"
+    if jobs[job_id].status == 'Running':
+        # TODO Should we send a signal to the docker container to drop the work?
+        try:
+            jobs[job_id].status == 'Aborted'
+            node_name = ''
+            for (n, j) in running_nodes:
+                if j == job_id:
+                    node_name = n
+                    nodes[n].status = 'idle'
+                    idle_nodes.append(n)
+                    break
+            running_nodes.remove((node_name,job_id))
+            return f"Aborted job {job_id} successfully"
+        except:
+            return f"An error occured while aborting job {job_id}"
+
 
 def connectThroughProxy():
     headers = "" # Should define the headers here
@@ -177,3 +255,9 @@ def removeNodesFromPodList(nodes_to_remove, pod):
     pod.nodes =  [ node
             for node in pod.nodes
             if node.name not in names_to_remove]
+
+def getFirstAvailableNode():
+    if not idle_nodes:
+        return None
+    else: 
+        return nodes[idle_nodes[0]]
