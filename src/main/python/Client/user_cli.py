@@ -57,11 +57,11 @@ def execute_cmd(cmd):
         if not path_to_job:
             print ('PATH_TO_JOB required for launching a job')
             return
-        
+        files = {'file': open(path_to_job, 'rb')}
+
         # Job status 'Requested' and jobId '-1' is used to demonstrate that the request is sent to the api
-        # Once job is successfully launched, RM will update these values accordingly
-        res = requests.post(f'http://{api_host}:{api_port}/jobs/', json={'path':path_to_job, 'status': 'Requested', 'jobId': -1}, headers={"Content-Type": "application/json", "accept":"application/json"})
-        print(res)
+        res = requests.post(f'http://{api_host}:{api_port}/jobs/', files=files)
+        print(res.text)
         return res
     elif (cmd.strip()).startswith('cloud abort'):
         job_id = ((cmd.strip()).split())[2]
@@ -69,7 +69,7 @@ def execute_cmd(cmd):
             print ('JOB_ID required for aborting a job')
             return
         res = requests.delete(f'http://{api_host}:{api_port}/jobs/{job_id}')
-        print(res)
+        print(res.text)
         return res
     else:
         print("Wrong input! Please use help command to see the format of the supported commands")

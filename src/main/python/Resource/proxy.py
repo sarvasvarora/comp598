@@ -48,7 +48,7 @@ def processConnection(clntConnection, clntAddress):
                 # TODO The number of containers to initialize should be configured
                 for i in range(2):
                     d_name = f"default_{i}"
-                    c = docker_client.containers.create("alpine", name=d_name)
+                    c = docker_client.containers.run("alpine", name=d_name, detach=True, tty=True, volumes={'/home/comp598-user/comp598/src/main/python/Resource/jobs' : {'bind': '/mnt/vol1', 'mode': 'rw'}})
                     idle_containers.append(c)
                 print("Successfully made all containers")
                 message2send = {'timestamp':datetime.now(), 'status': 200}
@@ -78,6 +78,19 @@ def processConnection(clntConnection, clntAddress):
                 else:
                     print(f"No node named {node_name} to be removed")
                     message2send = {'timestamp':datetime.now(), 'status': 400}
+                    clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+            elif clntData['cmd'] == "job launch":
+                container = docker_client.containers.get(clntData['node_name'])
+                if container:
+                    jobFile = open(f"jobs/job_{clntData['job_id']}.sh", "w")
+                    jobFile.write(clntData['file'])
+                    jobFile.close()
+                    output = container.exec_run(f"sh -c 'mkdir logs && cd /mnt/vol1 && chmod +x job_{clntData['job_id']}.sh && ./job_{clntData['job_id']}.sh >> /logs/job_{clntData['job_id']}.log && cd ~'", stderr=True, stdout=True)
+                    message2send = {'node_name': container.name, 'node_status': container.status, 'timestamp':datetime.now(), 'status': 200}
+                    clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+                else:
+                    print(f"No node named {node_name} to launch the job")
+                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {node_name} to launch the job"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
         except Exception as e:
             clntConnection.close()
