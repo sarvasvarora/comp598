@@ -31,7 +31,7 @@ def execute_cmd(cmd):
     elif (cmd.strip()).startswith('cloud register'):
         s = (cmd.strip()).split()
         node_name = s[2]
-        pod_name = 'default'
+        pod_id =  0
 
         if not node_name:
             print ('NODE_NAME required for registering a node')
@@ -39,9 +39,9 @@ def execute_cmd(cmd):
         
         # Check if user specified pod name
         if len(s) == 4:
-            pod_name = s[3]
+            pod_id = s[3]
         
-        res = requests.post(f'http://{api_host}:{api_port}/nodes/', json={'name': node_name, 'pod_name': pod_name}, headers={"Content-Type": "application/json", "accept":"application/json"})
+        res = requests.post(f'http://{api_host}:{api_port}/nodes/', json={'name': node_name, 'pod_id': pod_id}, headers={"Content-Type": "application/json", "accept":"application/json"})
         print(res)
         return res
     elif (cmd.strip()).startswith('cloud rm'):
@@ -71,6 +71,46 @@ def execute_cmd(cmd):
         res = requests.delete(f'http://{api_host}:{api_port}/jobs/{job_id}')
         print(res.text)
         return res
+    elif cmd.strip() == 'cloud pod ls':
+        res = requests.get(f'http://{api_host}:{api_port}/pods/')
+        print(res.text)
+        return res
+    elif (cmd.strip()).startswith('cloud node ls'):
+        pod_id = -1
+        s = (cmd.strip()).split()
+        if len(s) == 4:
+            pod_id = s[3]
+        res = requests.get(f'http://{api_host}:{api_port}/nodes/{pod_id}')
+        print(res.text)
+        return res
+    elif (cmd.strip()).startswith('cloud job ls'):
+        node_id = -1
+        s = (cmd.strip()).split()
+        if len(s) == 4:
+            node_id = s[3]
+        res = requests.get(f'http://{api_host}:{api_port}/jobs/{node_id}')
+        print(res.text)
+        return res
+    elif (cmd.strip()).startswith('cloud job log'):
+        s = (cmd.strip()).split()
+        if len(s) == 4:
+            job_id = s[3]
+            res = requests.get(f'http://{api_host}:{api_port}/logs/{job_id}')
+            print(res.text)
+            return res
+        else: 
+            print ('JOB_ID required for retrieving logs')
+            return False
+    elif (cmd.strip()).startswith('cloud log node'):
+        s = (cmd.strip()).split()
+        if len(s) == 4:
+            node_id = s[3]
+            res = requests.get(f'http://{api_host}:{api_port}/nodeLogs/{node_id}')
+            print(res.text)
+            return res
+        else: 
+            print ('NODE_ID required for retrieving logs')
+            return False    
     else:
         print("Wrong input! Please use help command to see the format of the supported commands")
 

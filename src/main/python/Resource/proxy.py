@@ -3,6 +3,7 @@ from threading import Thread
 import docker
 from datetime import datetime
 import json
+import subprocess
 
 # Listening port and the buffer size to get client data
 
@@ -28,7 +29,7 @@ def main():
     while True:
         try:
             clntConnection, clntAddress = s.accept()
-            clntConnection.settimeout(60)
+            clntConnection.settimeout(120)
             print("Connection from: " + str(clntAddress))
             # Starting a thread to handle the incoming request
             Thread(target = processConnection, args = (clntConnection, clntAddress)).start()
@@ -82,6 +83,7 @@ def processConnection(clntConnection, clntAddress):
             elif clntData['cmd'] == "job launch":
                 container = docker_client.containers.get(clntData['node_name'])
                 if container:
+                    # TODO Fix the permission denied thing
                     jobFile = open(f"jobs/job_{clntData['job_id']}.sh", "w")
                     jobFile.write(clntData['file'])
                     jobFile.close()
@@ -93,6 +95,26 @@ def processConnection(clntConnection, clntAddress):
                 else:
                     print(f"No node named {node_name} to launch the job")
                     message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {node_name} to launch the job"}
+                    clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+            elif clntData['cmd'] == "job log":
+                container = docker_client.containers.get(clntData['node_name'])
+                if container:
+                    output = container.exec_run(f"sh -c 'cd logs && cat job_{clntData['job_id']}.log && cd ~'", stderr=True, stdout=True)
+                    message2send = {'log': output.output.decode('utf-8'), 'timestamp': datetime.now(), 'status': 200}
+                    clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+                else:
+                    print(f"No node named {node_name} to get the log")
+                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {node_name} to get the log"}
+                    clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+            elif clntData['cmd'] == "node log":
+                container = docker_client.containers.get(clntData['node_name'])
+                if container:
+                    output = container.exec_run(f"sh -c 'cd logs && cat *.log && cd ~'", stderr=True, stdout=True)
+                    message2send = {'log': output.output.decode('utf-8'), 'timestamp': datetime.now(), 'status': 200}
+                    clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+                else:
+                    print(f"No node named {node_name} to get the log")
+                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {node_name} to get the log"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
         except Exception as e:
             clntConnection.close()
