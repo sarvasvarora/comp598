@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import BackgroundTasks, FastAPI
 from fastapi import File, UploadFile
 from typing import Union
 from pydantic import BaseModel
@@ -154,7 +154,7 @@ def read_jobs():
     return jobs
 
 @app.post("/jobs/")
-def launch_job(file: UploadFile = File(...)):
+async def launch_job(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     global idle_nodes
     global running_nodes
     try:
@@ -180,28 +180,31 @@ def launch_job(file: UploadFile = File(...)):
         print(f"No idle node at the moment. Placed the job in the waiting queue")
         # TODO Once the job is taken out of the jobqueue, notify the user!
     else:
-        # Status updates 
-        n.status = 'Running'
-        job.status = 'Running'
-        idle_nodes.remove(n.name)
-        running_nodes.append((n.name, job.jobId))
+        # Update the client on job dispatch and wait for the RP proxy in background
+        background_tasks.add_task(processJobLaunch,n, job, file)
+        return {"message": f"Successfully dispatched and completed job {job.jobId}"}
 
-        # make call to proxy [should be non-blocking for user]
-        # TODO Make this piece async
-        with open(file.filename, 'r') as f:
+def processJobLaunch(node, job, file):
+    global idle_nodes
+    global running_nodes
+    # Status updates 
+    node.status = 'Running'
+    job.status = 'Running'
+    idle_nodes.remove(node.name)
+    running_nodes.append((node.name, job.jobId)) 
+
+    with open(file.filename, 'r') as f:
             data = f.read()
-        message2send = {'cmd': 'job launch', 'node_name': n.name , 'job_id': job.jobId, 'file': data}
-        socket.send(json.dumps(message2send, default=str).encode('utf-8'))
-        resp = json.loads(socket.recv(8192).decode('utf-8'))
-        print(resp)
-        if resp['status'] == 200:
-            return {"message": f"Successfully dispatched and completed job {job.jobId}"}
-            n.status = 'idle'
-            job.status = 'Completed'
-            running_nodes.remove((n.name,job.jobId))
-            idle_nodes.append(n.name)
-        else:
-            return {"message": f"Successfully dispatched job {job.jobId} but an error happened while running the job"}
+
+    message2send = {'cmd': 'job launch', 'node_name': node.name , 'job_id': job.jobId, 'file': data}
+    socket.send(json.dumps(message2send, default=str).encode('utf-8'))
+    resp = json.loads(socket.recv(8192).decode('utf-8'))
+    print(resp)
+    if resp['status'] == 200:
+        node.status = 'idle'
+        job.status = 'Completed'
+        running_nodes.remove((node.name,job.jobId))
+        idle_nodes.append(node.name)
 
 @app.delete("/jobs/{job_id}")
 def abort_job(job_id: int):

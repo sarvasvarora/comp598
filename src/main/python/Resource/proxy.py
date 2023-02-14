@@ -1,4 +1,4 @@
-import socket, sys 
+import socket, sys, os
 from threading import Thread
 import docker
 from datetime import datetime
@@ -48,7 +48,7 @@ def processConnection(clntConnection, clntAddress):
                 # TODO The number of containers to initialize should be configured
                 for i in range(2):
                     d_name = f"default_{i}"
-                    c = docker_client.containers.run("alpine", name=d_name, detach=True, tty=True, volumes={'/home/comp598-user/comp598/src/main/python/Resource/jobs' : {'bind': '/mnt/vol1', 'mode': 'rw'}})
+                    c = docker_client.containers.run("alpine", name=d_name, detach=True, tty=True, volumes={'/home/comp598-user/comp598/src/main/python/Resource/jobs' : {'bind': '/mnt/vol1', 'mode': 'ro'}})
                     idle_containers.append(c)
                 print("Successfully made all containers")
                 message2send = {'timestamp':datetime.now(), 'status': 200}
@@ -85,7 +85,9 @@ def processConnection(clntConnection, clntAddress):
                     jobFile = open(f"jobs/job_{clntData['job_id']}.sh", "w")
                     jobFile.write(clntData['file'])
                     jobFile.close()
-                    output = container.exec_run(f"sh -c 'mkdir logs && cd /mnt/vol1 && chmod +x job_{clntData['job_id']}.sh && ./job_{clntData['job_id']}.sh >> /logs/job_{clntData['job_id']}.log && cd ~'", stderr=True, stdout=True)
+                    os.chmod(f"jobs/job_{clntData['job_id']}.sh", 777)
+                    output = container.exec_run(f"sh -c 'mkdir -p logs && cd /mnt/vol1 && ./job_{clntData['job_id']}.sh >> /logs/job_{clntData['job_id']}.log && cd ~'", stderr=True, stdout=True)
+                    print(output)
                     message2send = {'node_name': container.name, 'node_status': container.status, 'timestamp':datetime.now(), 'status': 200}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
