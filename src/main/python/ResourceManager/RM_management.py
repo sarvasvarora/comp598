@@ -1,5 +1,6 @@
 from fastapi import BackgroundTasks, FastAPI
 from fastapi import File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Union
 from pydantic import BaseModel
 from typing import Optional, List
@@ -48,6 +49,14 @@ class Job(BaseModel):
     file: UploadFile
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/")
 def read_root():
@@ -146,7 +155,7 @@ def create_node(node: Node):
         if n:
             return f"A node with name {node.name} already exists in the default pod"
         
-        message2send = {'cmd': 'node register', 'node_name': node.name , 'pod_name': pods[node.pod_id].name}
+        message2send = {'cmd': 'node register', 'node_name': node.name , 'pod_name': pods[node.pod_id].name, 'cpu': node.cpu, 'storage':node.storage, 'memory': node.memory}
         print(message2send)
         socket.send(json.dumps(message2send, default=str).encode('utf-8'))
         resp = json.loads(socket.recv(8192).decode('utf-8'))
