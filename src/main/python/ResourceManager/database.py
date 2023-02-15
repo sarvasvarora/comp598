@@ -1,5 +1,36 @@
-from id_generator import IDGenerator
+from .id_generator import IDGenerator
 from copy import deepcopy
+
+"""
+###############
+DATABASE SCHEMA
+###############
+
+pods = podId -> Pod
+Pod = {
+    "name": str,
+    "node": List[str]
+}
+
+
+nodes: nodeId -> Node
+Node = {
+    "name": str,
+    "podId": str,
+    "status": NodeStatus/str,
+    "cpu": Optional[int],
+    "memory": Optional[int],
+    "storage": Optional[int]
+}
+
+
+jobs: jobId -> Job
+Job = {
+    "path": str,
+    "status": JobStatus/str
+}
+"""
+
 
 
 class Database():
@@ -40,23 +71,23 @@ class Database():
             return None
 
     def add_node(self, node: dict) -> str:
-        assert node.get('name', None) is not None and node.get('pod_id', None) is not None and node.get('status', None) is not None
+        assert node.get('name', None) is not None and node.get('podId', None) is not None and node.get('status', None) is not None
         # ensure that the pod to which the node needs to be added exists
-        if node['pod_id'] not in self.pods.keys():
+        if node['podId'] not in self.pods.keys():
             return
         # generate node ID
         id = self.node_id_generator.generate_id()
         # create the data object
         data = {
             "name": node['name'],
-            "pod_id": node['pod_id'],
+            "podId": node['podId'],
             "status": node['status'],
             "cpu": node.get('cpu', None),
             "memory": node.get('memory', None),
             "storage": node.get('storage', None)
         }
         # append the node ID to the associated pod record
-        self.pods[node['pod_id']]['nodes'].append(id)
+        self.pods[node['podId']]['nodes'].append(id)
         # insert the data into the nodes table
         self.nodes[id] = data
         # return node ID

@@ -1,13 +1,18 @@
 from typer import Typer, Argument, Option
+from rich import print, print_json
+import requests
+import json
+from json import JSONDecodeError
+from .env import *
 
 
-app = Typer.app()
+app = Typer()
 
 
 @app.command()
 def register(
     node_name: str = Argument(..., help='Node name to register'),
-    pod_name: str = Option('default', help='Pod name to register the new node to.')
+    pod_id: str = Option('default', help='Pod ID to register the new node to.')
 ):
     """
     Creates a new node and registers it to the specified pod ID.
@@ -17,27 +22,41 @@ def register(
         "Content-Type": "application/json",
         "accept": "application/json"
     }
-    data = {
+    data = json.dumps({
         "name": node_name,
-        "pod_name": pod_name,
-    }
+        "podId": pod_id
+    })
     res = requests.post(f"http://{API_HOST}:{API_PORT}/nodes/", data=data, headers=headers)
-    print(res)
+    try:
+        print_json(data=res.json())
+    except JSONDecodeError:
+        print(res.text)
 
 
 @app.command()
-def rm(node_name: str = Argument(..., help='Node name to remove.')):
+def rm(node_id: str = Argument(..., help='Node ID to remove.')):
     """
     Removes the specified node.
     [IMPORTANT] The command fails if the name does not exist or if its status is not “Idle”.
     """
-    requests.delete(f"http://{API_HOST}:{API_PORT}/nodes/{node_name}")
-    print(res)
+    res = requests.delete(f"http://{API_HOST}:{API_PORT}/nodes/{node_id}")
+    try:
+        print_json(data=res.json())
+    except JSONDecodeError:
+        print(res.text)
 
 
 @app.command()
-def ls():
-    pass
+def ls(pod_id: str = Option(None, help='Pod ID to list the nodes for.')):
+    """
+    Lists all the nodes in the specified resource pod.
+    If no resource pod was specified, all nodes of the cloud system are listed.
+    """
+    res = requests.get(f"http://{API_HOST}:{API_PORT}/pods/{pod_id}/nodes") if pod_id else requests.get(f"http://{API_HOST}:{API_PORT}/nodes")
+    try:
+        print_json(data=res.json())
+    except JSONDecodeError:
+        print(res.text)
 
 
 @app.command()

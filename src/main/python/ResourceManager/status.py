@@ -1,4 +1,4 @@
-form enum import Enum
+from enum import Enum
 
 
 class NodeStatus(Enum):

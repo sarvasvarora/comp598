@@ -1,5 +1,9 @@
 #   -*- coding: utf-8 -*-
-from pybuilder.core import use_plugin, init
+from pybuilder.core import use_plugin, init, task
+import sys
+import os
+import uvicorn
+import typer
 
 use_plugin("python.core")
 use_plugin("python.unittest")
@@ -17,3 +21,9 @@ def set_properties(project):
     project.depends_on("pydantic")
     project.depends_on("uvicorn")
     project.depends_on("typer[all]")
+    project.depends_on("rich")
+
+@task
+def run_resource_manager(project):
+    sys.path.append('src/main/python')
+    uvicorn.run('ResourceManager.resource_manager:app', host='127.0.0.1', port=3000, log_level='info', reload=True)
