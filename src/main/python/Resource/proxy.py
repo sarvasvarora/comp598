@@ -60,7 +60,15 @@ def processConnection(clntConnection, clntAddress):
                     container.rename(clntData['node_name'])
                     container.reload()
                     print(f"Renamed container to {container.name}")
-                    # TODO Add support for container.resize if user specifies
+                    if 'cpu' in clntData and clntData['cpu']:
+                        print('CPU update needed')
+                        container.update(cpu_shares=clntData['cpu'])
+                    if 'memory' in clntData and clntData['memory']:
+                        print('Memory update needed')
+                        container.update(mem_limit=clntData['memory'])
+                    if 'storage' in clntData and clntData['storage']:
+                        # TODO Not an easy short way to limit storage per container 
+                        print('Storage update needed')
                     message2send = {'node_name': container.name, 'node_status': container.status, 'timestamp':datetime.now(), 'status': 200}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
@@ -118,6 +126,10 @@ def processConnection(clntConnection, clntAddress):
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
         except Exception as e:
             clntConnection.close()
+
+            # Run the cleanup script 
+            print(subprocess.run(["./cleanup.sh"], shell=True))
+
             print("Closed collection with client. Error: " + str(e))
             break
 
