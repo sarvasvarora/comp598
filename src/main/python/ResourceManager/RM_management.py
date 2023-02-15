@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 import socket
 from datetime import datetime
+from threading import Thread
 import json
 
 proxy_host = "10.140.17.114"
@@ -20,7 +21,6 @@ nodes = {}          # key: node_id     value: node object
 jobs = {}           # key: job_id        value: job object
 jobQueue = []       # Stores JobId of job objects that are waiting
 idle_nodes = []     # Stores nodeId of idle nodes 
-running_nodes = []  # Stores (nodeId, jobID) of running nodes and what job they are running
 
 class Cluster(BaseModel):
     name: str
@@ -159,16 +159,15 @@ def create_node(node: Node):
             node.id = node_id_tracker
             node.status = 'idle'
             nodes[node.id] = node
-            idle_nodes.append(node.id)
-            pods[node.pod_id].nodes.append(node.id)  # Adding this node to its pod list of nodes
-            print(idle_nodes)
+            pods[node.pod_id].nodes.append(node.id)
 
-            # Check if there is anything to be assigned to the node
-            if jobQueue:
-                # This function will update the jobs, and node status + making the docker call
-                assignJobToNode(jobs[jobQueue.pop(0)], node)
-            
-            return node
+            idle_nodes.append(node.id)
+            pending_job_id = checkForPendingJobs(node)
+            if pending_job_id: 
+                print(f'Pending job with id {pending_job_id} is now assigned to node {node.name}')
+                return {'node': node, 'message': f'Pending job with id {pending_job_id} is now assigned to node {node.name}'}
+            else:
+                return {'node': node}
         else: 
             return f"An error occured while registering node {node.name} on RP"
     else:
@@ -238,7 +237,6 @@ def get_node_logs(node_id: int):
 @app.post("/jobs/")
 async def launch_job(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     global idle_nodes
-    global running_nodes
     try:
         contents = file.file.read()
         with open(file.filename, 'wb') as f:
@@ -259,8 +257,7 @@ async def launch_job(background_tasks: BackgroundTasks, file: UploadFile = File(
     # If no idle node -> place the job in the queue
     if not n:
         jobQueue.append(job.jobId)
-        print(f"No idle node at the moment. Placed the job in the waiting queue")
-        # TODO Once the job is taken out of the jobqueue, notify the user!
+        return {"message": f"No idle node at the moment. Placed the job in the waiting queue"}
     else:
         # Update the client on job dispatch and wait for the RP proxy in background
         job.nodeId = n.id
@@ -269,12 +266,10 @@ async def launch_job(background_tasks: BackgroundTasks, file: UploadFile = File(
 
 def processJobLaunch(node, job, file):
     global idle_nodes
-    global running_nodes
     # Status updates 
     node.status = 'Running'
     job.status = 'Running'
     idle_nodes.remove(node.id)
-    running_nodes.append((node.name, job.jobId)) 
 
     with open(file.filename, 'r') as f:
             data = f.read()
@@ -286,8 +281,10 @@ def processJobLaunch(node, job, file):
     if resp['status'] == 200:
         node.status = 'idle'
         job.status = 'Completed'
-        running_nodes.remove((node.name,job.jobId))
         idle_nodes.append(node.id)
+        pending_job_id = checkForPendingJobs(node)
+        if pending_job_id: 
+            print(f'Pending job with id {pending_job_id} is now assigned to node {node.name}')
 
 @app.delete("/jobs/{job_id}")
 def abort_job(job_id: int):
@@ -301,40 +298,19 @@ def abort_job(job_id: int):
     if jobs[job_id].status == 'Running':
         # TODO Should we send a signal to the docker container to drop the work?
         try:
-            jobs[job_id].status == 'Aborted'
-            node_name = ''
-            for (n, j) in running_nodes:
-                if j == job_id:
-                    node_name = n
-                    nodes[n].status = 'idle'
-                    idle_nodes.append(n)
-                    break
-            running_nodes.remove((node_name,job_id))
-            return f"Aborted job {job_id} successfully"
+            node = nodes[jobs[job_id].nodeId]
+            jobs[job_id].status = 'Aborted'
+            node.status = 'idle'
+            idle_nodes.append(node.id)
+
+            pending_job_id = checkForPendingJobs(node)
+            if pending_job_id: 
+                print(f'Pending job with id {pending_job_id} is now assigned to node {node.name}')
+                return f"Aborted job {job_id} successfully. Pending job with id {pending_job_id} is now assigned to node {node.name}"
+            else:
+                return f"Aborted job {job_id} successfully"
         except:
             return f"An error occured while aborting job {job_id}"
-
-def connectThroughProxy():
-    headers = "" # Should define the headers here
-    try:
-        s = socket.socket()
-        s.connect((host,port))
-        s.send(headers.encode('utf-8'))
-        response = s.recv(3000)
-        print (response)
-        s.close()
-    except socket.error as m:
-       print (str(m))
-       s.close() 
-
-def getPodByName(pod_name):
-    for p in pods:
-        if p.name == pod_name:
-            return p
-    return None
-    
-def assignJobToNode(job, node):
-    pass
 
 def getFirstAvailableNode():
     if not idle_nodes:
@@ -342,16 +318,19 @@ def getFirstAvailableNode():
     else: 
         return nodes[idle_nodes[0]]
 
-def podNameExists(podname):
-    for pid in pods:
-        if pods[pid].name == podname:
-            return pods[pid]
-    return None
-
 def getNodeByName(node_name):
-    
     for nid in nodes:
         n = nodes[nid]
         if n.name == node_name:
             return n
     return None
+
+def checkForPendingJobs(node):
+    # If there is any job waiting, assign the job to the free node
+    if jobQueue:
+        job = jobs[jobQueue.pop(0)]
+        job.nodeId = node.id
+        Thread(target = processJobLaunch, args = (node, job, job.file)).start()
+        return job.jobId
+    else:
+        return None
