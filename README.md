@@ -16,7 +16,6 @@
   - Proxy: `PROXY_HOST`, `PROXY_PORT`, and `NUM_NODES` (number of default containers to spin up when the cloud application is initialized).
 ### Frontend
 - cd into `fe` and run `npm install`
-  - If `npm install` fails, you may have to uninstall node_modules and re-execute `npm install`
 - Run `npm run start` and navigate to `http://localhost:3000` in your browser of choice
 
 ## The `cloud` CLI
