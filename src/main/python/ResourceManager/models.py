@@ -13,7 +13,7 @@ class Pod(BaseModel):
 
 class Node(BaseModel):
     name: str
-    podId: str
+    podId: Optional[str] = None
     cpu: Optional[int] = None
     memory: Optional[int] = None
     storage: Optional[int] = None

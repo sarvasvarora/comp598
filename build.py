@@ -12,7 +12,7 @@ use_plugin("python.distutils")
 
 
 name = "cloud_manager"
-default_task = "publish"
+default_task = ["install_dependencies", "publish"]
 
 
 @init
@@ -23,10 +23,22 @@ def set_properties(project):
     project.depends_on("typer[all]")
     project.depends_on("rich")
     project.depends_on("python-multipart")
+    project.depends_on("docker")
 
 @task
 def run_resource_manager(project):
     sys.path.append('src/main/python')
+    os.environ['PROXY_HOST'] = "localhost"
+    os.environ['PROXY_PORT'] = "8000"
     os.environ['API_HOST'] = "localhost"
     os.environ['API_PORT'] = "3000"
     uvicorn.run('ResourceManager.resource_manager:app', host='127.0.0.1', port=3000, log_level='info', reload=True)
+
+@task
+def run_proxy(project):
+    sys.path.append('src/main/python')
+    from Resource.proxy import main
+    os.environ['PROXY_HOST'] = "localhost"
+    os.environ['PROXY_PORT'] = "8000"
+    main()
+
