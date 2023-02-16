@@ -37,7 +37,7 @@ Node = {
 jobs: jobId -> Job
 Job = {
     "filename": str,
-    "file": IO,
+    "content": str,
     "status": JobStatus/str,
     "nodeId": str
 }
@@ -184,13 +184,13 @@ class Database():
     # JOB METHODS
     #############
     def add_job(self, job: dict) -> str:
-        assert job.get('filename', None) is not None and job.get('status', None) is not None and job.get('file', None) is not None
+        assert job.get('filename', None) is not None and job.get('status', None) is not None and job.get('content', None) is not None
         # generate job ID
         id = self.job_id_generator.generate_id()
         # create the data object
         data = {
             "filename": job['filename'],
-            "file": job['file'],
+            "content": job['content'],
             "status": job['status'],
             "nodeId": job.get('nodeId', None)
         }

@@ -22,6 +22,9 @@ app = FastAPI()
 DEFAULT_CLUSTER_ID = None
 DEFAULT_POD_ID = None
 
+# cloud init check
+CLOUD_INIT = False
+
 
 ################
 # ROOT ENDPOINT
@@ -36,7 +39,12 @@ async def read_root():
 #######################
 @app.get("/init")
 async def init():
-    global DEFAULT_CLUSTER_ID, DEFAULT_POD_ID
+    global DEFAULT_CLUSTER_ID, DEFAULT_POD_ID, CLOUD_INIT
+    if CLOUD_INIT:
+        return {
+            "res": "fail",
+            "msg": "Cloud is already initialized for use."
+        }
     # create the default cluster with a pod
     default_cluster = {
         "name": DEFAULT_CLUSTER_NAME,
@@ -67,7 +75,7 @@ async def init():
             "res": "fail",
             "msg": "Failed to connect to the proxy server"
         }
-
+    CLOUD_INIT = True
     return {
         "res": "successful",
         "msg": "Cloud initialization successfully completed."
@@ -78,7 +86,7 @@ async def init():
 # CLUSTER ENDPOINTS
 ###################
 @app.post("/clusters")
-async def create_cluster(cluster: Cluster):
+async def create_cluster(cluster: ClusterReq):
     cluster = jsonable_encoder(cluster)
     cluster_id = database.add_cluster(cluster)
     return {"clusterId": cluster_id}
@@ -109,7 +117,7 @@ async def delete_cluster(cluster_id: str):
 # POD ENDPOINTS
 ################
 @app.post("/pods")
-async def create_pod(pod: Pod):
+async def create_pod(pod: PodReq):
     pod = jsonable_encoder(pod)
     if pod.get('clusterId', None) is None:
         pod['clusterId'] = DEFAULT_CLUSTER_ID
@@ -142,7 +150,7 @@ async def delete_pod(pod_id: str):
 # NODE ENDPOINTS
 #################
 @app.post("/nodes")
-async def create_node(node: Node):
+async def create_node(node: NodeReq):
     # add node to the database
     node = jsonable_encoder(node)
     if node.get('podId', None) is None:
@@ -219,11 +227,11 @@ async def delete_node(node_id: str):
 # JOB ENDPOINTS
 ################
 @app.post("/jobs")
-async def create_job(job: Job = Body(...), job_file: UploadFile = File(...)):
+async def create_job(job: JobReq = Body(...), job_file: UploadFile = File(...)):
     # Make docker cmd call to create node
     job = jsonable_encoder(job)
     job['status'] = JobStatus.REGISTERED
-    job['file'] = job_file.file
+    job['content'] = job_file.file.read().decode('utf-8')
     job_id = database.add_job(job)
 
     # find an idle node
@@ -299,11 +307,13 @@ def get_job_log(job_id: str):
     job = database.get_job(job_id)
     if not job:
         return {f"Unable to fetch logs for the specified job. No job exists with jobId: {job_id}"}
-    elif job['status'] != JobStatus.COMPLETED or job['status'] != JobStatus.COMPLETED.value:
+    elif not (job['status'] == JobStatus.COMPLETED or job['status'] == JobStatus.COMPLETED.value):
         return {"No logs available for the specified job as it has not yet completed execution. Please try again after some time."}
     else:
         node_id = job['nodeId']
         node = database.get_node(node_id)
+        if not node:
+            return {f"Unable to fetch logs for this job as the associated node with nodeId: {node_id} does not exist anymore."}
         pod_id = node['podId']
         pod = database.get_pod(pod_id)
         # fetch the log file from the proxy
@@ -314,9 +324,8 @@ def get_job_log(job_id: str):
             "jobId": job_id
         }).encode('utf-8')
         try:
-            socket.send(msg)
-            resp = json.loads(socket.recv(8192).decode('utf-8'))
-            print(resp)
+            PROXY_SOCKET.send(msg)
+            resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
             return {
                 "jobId": job_id,
                 "log": resp['log']
@@ -339,8 +348,8 @@ def get_node_logs(node_id: str):
             "podName": pod['name']
         }).encode('utf-8')
         try:
-            socket.send(msg)
-            resp = json.loads(socket.recv(8192).decode('utf-8'))
+            PROXY_SOCKET.send(msg)
+            resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
             print(resp)
             return {
                 "nodeId": node_id,

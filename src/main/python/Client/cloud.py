@@ -16,10 +16,10 @@ from .env import *
 app = Typer()
 
 # add subcommands to the main cloud app
-app.add_typer(cluster_app, name='cluster')
-app.add_typer(pod_app, name='pod')
-app.add_typer(node_app, name='node')
-app.add_typer(job_app, name='job')
+app.add_typer(cluster_app, name='cluster', help='Command group to interact with clusters.')
+app.add_typer(pod_app, name='pod', help='Command group to interact with pods.')
+app.add_typer(node_app, name='node', help='Command group to interact with nodes.')
+app.add_typer(job_app, name='job', help='Command group to interact with jobs.')
 
 
 @app.command()

@@ -4,21 +4,21 @@ from typing import Optional, List
 import json
 
 
-class Cluster(BaseModel):
+class ClusterReq(BaseModel):
     name: str
 
-class Pod(BaseModel):
+class PodReq(BaseModel):
     name: str
     clusterId: Optional[str] = None
 
-class Node(BaseModel):
+class NodeReq(BaseModel):
     name: str
     podId: Optional[str] = None
     cpu: Optional[int] = None
     memory: Optional[int] = None
     storage: Optional[int] = None
 
-class Job(BaseModel):
+class JobReq(BaseModel):
     filename: str
 
     @classmethod

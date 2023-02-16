@@ -13,7 +13,10 @@ TODO DEV NOTES
     - Create more helper functions and modularize the proxy program.
     - Use IDs instead of names (also applies to the first point - change it later).
     - Name containers in the form {pod_id}_{node_id} as obtained from the RM.
+    - Have a CLI function (and backend functionality) to shut down and/or reset the cloud (???)
     - (For future development) Integrate the use of cluster ID in node abstraction.
+    - (For future development) cache job log in the database (once returned) so that it can be made available to the client even if the node has been deleted
+    - (For future development) (Design decision) Have a queue for completed jobs similar to aborted jobs. When a job has been completed, remove it from the main job list/dict and put it into this queue. This will prevent memory overload in case of a large number of jobs. A downside is that completed jobs would no longer be available to view.
 """
 
 # Listening port and the buffer size to get client data
@@ -59,7 +62,7 @@ def processConnection(clntConnection, clntAddress):
                 # Create 50 docker containers as vms under the default cluster and pod
                 print("Started creating containers ...")
                 # TODO The number of containers to initialize should be configured
-                for i in range(2):
+                for i in range(NUM_NODES):
                     d_name = f"{clntData['defaultPodName']}_node_{i}"
                     c = docker_client.containers.run("alpine", name=d_name, detach=True, tty=True, volumes={f"{ROOT_DIR}/jobs" : {'bind': '/mnt/vol1', 'mode': 'ro'}})
                     idle_containers.append(c)
@@ -103,11 +106,11 @@ def processConnection(clntConnection, clntAddress):
             elif clntData['cmd'] == "job launch":
                 container = docker_client.containers.get(clntData['nodeName'])
                 if container:
-                    jobFile = open(f"{ROOT_DIR}/jobs/job_{clntData['jobId']}.sh", "w+")
-                    jobFile.write(clntData['file'])
+                    jobFile = open(f"{ROOT_DIR}/jobs/{clntData['jobId']}.sh", "w+")
+                    jobFile.write(clntData['content'])
                     jobFile.close()
-                    os.chmod(f"{ROOT_DIR}/jobs/job_{clntData['jobId']}.sh", 777)
-                    output = container.exec_run(f"sh -c 'mkdir -p logs && cd /mnt/vol1 && ./job_{clntData['jobId']}.sh >> /logs/job_{clntData['jobId']}.log && cd ~'", stderr=True, stdout=True)
+                    os.chmod(f"{ROOT_DIR}/jobs/{clntData['jobId']}.sh", 777)
+                    output = container.exec_run(f"sh -c 'mkdir -p logs && cd /mnt/vol1 && ./{clntData['jobId']}.sh >> /logs/{clntData['jobId']}.log && cd ~'", stderr=True, stdout=True)
                     # TODO Add support for getting and storing pid of the launched job 
                     print(output)
                     message2send = {'nodeName': container.name, 'node_status': container.status, 'timestamp':datetime.now(), 'status': 200}
@@ -119,7 +122,7 @@ def processConnection(clntConnection, clntAddress):
             elif clntData['cmd'] == "job log":
                 container = docker_client.containers.get(clntData['nodeName'])
                 if container:
-                    output = container.exec_run(f"sh -c 'cd logs && cat job_{clntData['jobId']}.log && cd ~'", stderr=True, stdout=True)
+                    output = container.exec_run(f"sh -c 'cd logs && cat {clntData['jobId']}.log && cd ~'", stderr=True, stdout=True)
                     message2send = {'log': output.output.decode('utf-8'), 'timestamp': datetime.now(), 'status': 200}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
@@ -152,7 +155,7 @@ def findIdleContainer(pod_name):
 
 def cleanup():
     # Run the cleanup script 
-    print(subprocess.run(["cleanup.sh"], shell=True))
+    print(subprocess.run(["cleanup"], shell=True))
 
     # Deleting the old jobs folder
     shutil.rmtree(f"{ROOT_DIR}/jobs", ignore_errors=False, onerror=None)
