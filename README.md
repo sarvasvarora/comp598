@@ -3,9 +3,11 @@
 ## Build instructions
 - Clone the project and (optionally) start a python virtual environment in the project's root directory.
 - Execute `pyb install` to install dependencies, build the project, and install the `cloud` CLI to interact with the cloud application.
-- Available scripts:
+- Available scripts and commands:
   - `setup-env`: sets up the default environment variables to run various components of the project. By default, everything runs on localhost (127.0.0.1). The frontend runs on port 3000, the resource manager on port 8000, and the proxy on port 9000.
   - `cloud`: the CLI app to interact with the cloud application. More on this later.
+  - `pyb run_proxy`: runs the proxy.
+  - `pyb run_resource_manager`: runs the resource manager.
 - You may manually set these environment variables to change the location where components are hosted:
   - Frontend: `FRONTEND_HOST` and `FRONTEND_PORT`
   - Resource manager: `API_HOST` and `API_PORT`
