@@ -1,15 +1,25 @@
-from .id_generator import IDGenerator
 from copy import deepcopy
+from typing import IO
+from collections import deque
+from .id_generator import IDGenerator
+from .status import *
 
 """
 ###############
 DATABASE SCHEMA
 ###############
 
+clusters = clusterId -> Cluster
+Cluster = {
+    "name": str,
+    "pods": List[str]
+}
+
 pods = podId -> Pod
 Pod = {
     "name": str,
-    "node": List[str]
+    "clusterId": str
+    "nodes": List[str],
 }
 
 
@@ -26,33 +36,79 @@ Node = {
 
 jobs: jobId -> Job
 Job = {
-    "path": str,
-    "status": JobStatus/str
+    "filename": str,
+    "file": IO,
+    "status": JobStatus/str,
+    "nodeId": str
 }
+AbortedJobs: deque(maxlength = 10)
 """
 
 
 
 class Database():
-    def __init__(self):
+    def __init__(self, max_aborted_buffer: int = 10):
         # key -> ID, value -> data about each artifact
+        self.clusters = dict()
         self.pods = dict()
         self.nodes = dict()
         self.jobs = dict()
+        self.aborted_jobs = deque(max_aborted_buffer * [None], max_aborted_buffer)
         # initialize the ID generators
+        self.cluster_id_generator = IDGenerator(prefix='cluster')
         self.pod_id_generator = IDGenerator(prefix='pod')
         self.node_id_generator = IDGenerator(prefix='node')
         self.job_id_generator = IDGenerator(prefix='job')
     
+    #################
+    # CLUSTER METHODS
+    #################
+    def add_cluster(self, cluster: dict) -> str:
+        assert cluster.get('name', None) is not None
+        # generate cluster ID
+        id = self.cluster_id_generator.generate_id()
+        #create the required data object
+        data = {
+            "name": cluster['name'],
+            "pods": []
+        }
+        # insert the data into the clusters table
+        self.clusters[id] = data
+        # return cluster ID
+        return id
+    
+    def get_clusters(self):
+        return self.clusters.copy()
+
+    def get_cluster(self, cluster_id: str):
+        return self.clusters.get(cluster_id, None)
+    
+    def delete_cluster(self, cluster_id: str):
+        try:
+            if self.clusters[cluster_id].get('pods', None):
+                return None
+            return self.clusters.pop(cluster_id)
+        except KeyError:
+            return None
+
+    #############
+    # POD METHODS
+    #############
     def add_pod(self, pod: dict) -> str:
-        assert pod.get('name', None) is not None
+        assert pod.get('name', None) is not None and pod.get('clusterId', None) is not None
+        # ensure that the pod to which the node needs to be added exists
+        if pod['clusterId'] not in self.clusters.keys():
+            return
         # generate pod ID
         id = self.pod_id_generator.generate_id()
         # create required data object
         data = {
             "name": pod['name'],
+            "clusterId": pod['clusterId'],
             "nodes": []
         }
+        # append the pod ID to the associated cluster record
+        self.clusters[pod['clusterId']]['pods'].append(id)
         # insert the data into pods table
         self.pods[id] = data
         # return pod ID
@@ -62,14 +118,23 @@ class Database():
         return self.pods.copy()
 
     def get_pod(self, pod_id: str):
-        return self.get_pods().get(pod_id, None)
+        return self.pods.get(pod_id, None)
     
     def delete_pod(self, pod_id: str):
         try:
+            if self.pods[pod_id].get('nodes', None):
+                return None
+            # remove the pod from the corresponding cluster's pod list
+            pod = self.pods[pod_id]
+            self.clusters[pod['clusterId']].get('pods').remove(pod_id)
             return self.pods.pop(pod_id)
         except KeyError:
             return None
 
+
+    ###############
+    # NODE METHODS
+    ###############
     def add_node(self, node: dict) -> str:
         assert node.get('name', None) is not None and node.get('podId', None) is not None and node.get('status', None) is not None
         # ensure that the pod to which the node needs to be added exists
@@ -95,24 +160,39 @@ class Database():
 
     def get_nodes(self):
         return self.nodes.copy()
+    
+    def get_idle_nodes(self):
+        def filter_func(pair):
+            k, v = pair
+            return v['status'] == NodeStatus.IDLE or v['status'] == NodeStatus.IDLE.value
+        
+        return dict(filter(filter_func, self.nodes.items()))
 
     def get_node(self, node_id: str):
-        return self.get_nodes().get(node_id, None)
+        return self.nodes.get(node_id, None)
 
     def delete_node(self, node_id: str):
         try:
+            # remove the node from the corresponding pod's nodes list
+            node = self.nodes[node_id]
+            self.pods[node['podId']].get('nodes').remove(node_id)
             return self.nodes.pop(node_id)
         except KeyError:
             return None
-    
+
+    #############
+    # JOB METHODS
+    #############
     def add_job(self, job: dict) -> str:
-        assert job.get('path', None) is not None and job.get('status', None) is not None
+        assert job.get('filename', None) is not None and job.get('status', None) is not None and job.get('file', None) is not None
         # generate job ID
         id = self.job_id_generator.generate_id()
         # create the data object
         data = {
-            "path": job['path'],
-            "status": job['status']
+            "filename": job['filename'],
+            "file": job['file'],
+            "status": job['status'],
+            "nodeId": job.get('nodeId', None)
         }
         # insert the data into the jobs table
         self.jobs[id] = data
@@ -121,12 +201,28 @@ class Database():
 
     def get_jobs(self):
         return self.jobs.copy()
+
+    def get_registered_jobs(self):
+        def filter_func(pair):
+            k, v = pair
+            return v['status'] == JobStatus.REGISTERED or v['status'] == JobStatus.REGISTERED.value
+        
+        return dict(filter(filter_func, self.jobs.items()))
     
     def get_job(self, job_id: str):
-        return self.get_jobs().get(job_id, None)
+        return self.jobs.get(job_id, None)
+    
+    def get_aborted_jobs(self):
+        res = dict()
+        for job in self.aborted_jobs:
+            if job is not None:
+                res.update(job)
+        return res
     
     def delete_job(self, job_id: str):
         try:
-            return self.jobs.pop(job_id)
+            job = self.jobs.pop(job_id)
+            self.aborted_jobs.appendleft({job_id: job})
+            return job
         except KeyError:
             return None

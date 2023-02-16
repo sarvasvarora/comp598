@@ -1,10 +1,15 @@
+from fastapi import UploadFile
 from pydantic import BaseModel
 from typing import Optional, List
+import json
 
+
+class Cluster(BaseModel):
+    name: str
 
 class Pod(BaseModel):
     name: str
-    nodes: Optional[List[str]] = None
+    clusterId: Optional[str] = None
 
 class Node(BaseModel):
     name: str
@@ -14,4 +19,14 @@ class Node(BaseModel):
     storage: Optional[int] = None
 
 class Job(BaseModel):
-    path: str
+    filename: str
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate_to_json
+
+    @classmethod
+    def validate_to_json(cls, value):
+        if isinstance(value, str):
+            return cls(**json.loads(value))
+        return value

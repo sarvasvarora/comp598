@@ -9,3 +9,4 @@ class JobStatus(Enum):
     REGISTERED = "registered"
     RUNNING = "running"
     COMPLETED = "completed"
+    ABORTED = "aborted"
