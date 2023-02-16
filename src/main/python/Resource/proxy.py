@@ -7,6 +7,15 @@ import subprocess
 import shutil
 from .env import *
 
+"""
+TODO DEV NOTES
+    - [DONE] Initial node/container names of the form {default_pod_name}_{node_number/ID}
+    - Create more helper functions and modularize the proxy program.
+    - Use IDs instead of names (also applies to the first point - change it later).
+    - Name containers in the form {pod_id}_{node_id} as obtained from the RM.
+    - (For future development) Integrate the use of cluster ID in node abstraction.
+"""
+
 # Listening port and the buffer size to get client data
 docker_client = docker.from_env()
 idle_containers = []
@@ -51,16 +60,16 @@ def processConnection(clntConnection, clntAddress):
                 print("Started creating containers ...")
                 # TODO The number of containers to initialize should be configured
                 for i in range(2):
-                    d_name = f"default_{i}"
+                    d_name = f"{clntData['defaultPodName']}_node_{i}"
                     c = docker_client.containers.run("alpine", name=d_name, detach=True, tty=True, volumes={f"{ROOT_DIR}/jobs" : {'bind': '/mnt/vol1', 'mode': 'ro'}})
                     idle_containers.append(c)
                 print("Successfully made all containers")
                 message2send = {'timestamp':datetime.now(), 'status': 200}
                 clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
             elif clntData['cmd'] == "node register":
-                container = findIdleContainer(clntData['pod_name'])
+                container = findIdleContainer(clntData['podName'])
                 if container:
-                    container.rename(clntData['node_name'])
+                    container.rename(clntData['nodeName'])
                     container.reload()
                     print(f"Renamed container to {container.name}")
                     if 'cpu' in clntData and clntData['cpu']:
@@ -72,60 +81,60 @@ def processConnection(clntConnection, clntAddress):
                     if 'storage' in clntData and clntData['storage']:
                         # TODO Not an easy short way to limit storage per container 
                         print('Storage update needed')
-                    message2send = {'node_name': container.name, 'node_status': container.status, 'timestamp':datetime.now(), 'status': 200}
+                    message2send = {'nodeName': container.name, 'nodeStatus': container.status, 'timestamp':datetime.now(), 'status': 200}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
-                    print(f"No node under the podname {pod_name}")
+                    print(f"No node under the podname {clntData['podName']}")
                     message2send = {'timestamp':datetime.now(), 'status': 400}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
             elif clntData['cmd'] == "node rm":
-                container = docker_client.containers.get(clntData['node_name'])
+                container = docker_client.containers.get(clntData['nodeName'])
                 if container:
-                    new_name = clntData['pod_name'] + "_rm_" + clntData['node_name']
+                    new_name = clntData['podName'] + "_rm_" + clntData['nodeName']
                     container.rename(new_name)
                     container.reload()
                     print(f"Renamed container to {container.name}")
-                    message2send = {'node_name': container.name, 'node_status': container.status, 'timestamp':datetime.now(), 'status': 200}
+                    message2send = {'nodeName': container.name, 'node_status': container.status, 'timestamp':datetime.now(), 'status': 200}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
-                    print(f"No node named {node_name} to be removed")
+                    print(f"No node named {clntData['nodeName']} to be removed")
                     message2send = {'timestamp':datetime.now(), 'status': 400}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
             elif clntData['cmd'] == "job launch":
-                container = docker_client.containers.get(clntData['node_name'])
+                container = docker_client.containers.get(clntData['nodeName'])
                 if container:
-                    jobFile = open(f"{ROOT_DIR}/jobs/job_{clntData['job_id']}.sh", "w+")
+                    jobFile = open(f"{ROOT_DIR}/jobs/job_{clntData['jobId']}.sh", "w+")
                     jobFile.write(clntData['file'])
                     jobFile.close()
-                    os.chmod(f"{ROOT_DIR}/jobs/job_{clntData['job_id']}.sh", 777)
-                    output = container.exec_run(f"sh -c 'mkdir -p logs && cd /mnt/vol1 && ./job_{clntData['job_id']}.sh >> /logs/job_{clntData['job_id']}.log && cd ~'", stderr=True, stdout=True)
+                    os.chmod(f"{ROOT_DIR}/jobs/job_{clntData['jobId']}.sh", 777)
+                    output = container.exec_run(f"sh -c 'mkdir -p logs && cd /mnt/vol1 && ./job_{clntData['jobId']}.sh >> /logs/job_{clntData['jobId']}.log && cd ~'", stderr=True, stdout=True)
                     # TODO Add support for getting and storing pid of the launched job 
                     print(output)
-                    message2send = {'node_name': container.name, 'node_status': container.status, 'timestamp':datetime.now(), 'status': 200}
+                    message2send = {'nodeName': container.name, 'node_status': container.status, 'timestamp':datetime.now(), 'status': 200}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
-                    print(f"No node named {node_name} to launch the job")
-                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {node_name} to launch the job"}
+                    print(f"No node named {clntData['nodeName']} to launch the job")
+                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {clntData['nodeName']} to launch the job"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
             elif clntData['cmd'] == "job log":
-                container = docker_client.containers.get(clntData['node_name'])
+                container = docker_client.containers.get(clntData['nodeName'])
                 if container:
-                    output = container.exec_run(f"sh -c 'cd logs && cat job_{clntData['job_id']}.log && cd ~'", stderr=True, stdout=True)
+                    output = container.exec_run(f"sh -c 'cd logs && cat job_{clntData['jobId']}.log && cd ~'", stderr=True, stdout=True)
                     message2send = {'log': output.output.decode('utf-8'), 'timestamp': datetime.now(), 'status': 200}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
-                    print(f"No node named {node_name} to get the log")
-                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {node_name} to get the log"}
+                    print(f"No node named {clntData['nodeName']} to get the log")
+                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {clntData['nodeName']} to get the log"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
             elif clntData['cmd'] == "node log":
-                container = docker_client.containers.get(clntData['node_name'])
+                container = docker_client.containers.get(clntData['nodeName'])
                 if container:
                     output = container.exec_run(f"sh -c 'cd logs && cat *.log && cd ~'", stderr=True, stdout=True)
                     message2send = {'log': output.output.decode('utf-8'), 'timestamp': datetime.now(), 'status': 200}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
-                    print(f"No node named {node_name} to get the log")
-                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {node_name} to get the log"}
+                    print(f"No node named {clntData['nodeName']} to get the log")
+                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {clntData['nodeName']} to get the log"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
         except Exception as e:
             clntConnection.close()

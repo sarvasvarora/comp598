@@ -54,7 +54,8 @@ async def init():
     try:
         PROXY_SOCKET.connect((PROXY_HOST, PROXY_PORT))
         msg = json.dumps({
-            "cmd": "init"
+            "cmd": "init",
+            "defaultPodName": DEFAULT_POD_NAME 
         }).encode('utf-8')
         PROXY_SOCKET.send(msg)
         resp = PROXY_SOCKET.recv(8192).decode('utf-8')
@@ -154,8 +155,8 @@ async def create_node(node: Node):
         try:
             msg = json.dumps({
                 "cmd": "node register",
-                "node_name": database.get_node(node_id).get('name'),
-                "pod_name": database.get_pod(database.get_node(node_id).get('podId')).get('name')
+                "nodeName": database.get_node(node_id).get('name'),
+                "podName": database.get_pod(database.get_node(node_id).get('podId')).get('name')
             }).encode('utf-8')
             PROXY_SOCKET.send(msg)
             resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
@@ -196,8 +197,8 @@ async def delete_node(node_id: str):
         try:
             msg = json.dumps({
                 "cmd": "node rm",
-                "node_name": node['name'],
-                "pod_name": database.get_pod(node['podId']).get('name')
+                "nodeName": node['name'],
+                "podName": database.get_pod(node['podId']).get('name')
             }).encode('utf-8')
             PROXY_SOCKET.send(msg)
             resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
@@ -308,9 +309,9 @@ def get_job_log(job_id: str):
         # fetch the log file from the proxy
         msg = json.dumps({
             "cmd": "job log",
-            "node_name": node['name'],
-            "pod_name": pod['name'],
-            'job_id': job_id
+            "nodeName": node['name'],
+            "podName": pod['name'],
+            "jobId": job_id
         }).encode('utf-8')
         try:
             socket.send(msg)
@@ -334,8 +335,8 @@ def get_node_logs(node_id: str):
         pod = database.get_pod(pod_id)
         msg = json.dumps({
             "cmd": "node log",
-            "node_name": node['name'],
-            "pod_name": pod['name']
+            "nodeName": node['name'],
+            "podName": pod['name']
         }).encode('utf-8')
         try:
             socket.send(msg)
