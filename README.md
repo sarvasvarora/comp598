@@ -3,7 +3,8 @@
 ## Build instructions
 - Clone the project and (optionally) start a python virtual environment in the project's root directory.
 ### Backend
-- cd into `be` and Execute `pyb install` to install dependencies, build the project, and install the `cloud` CLI to interact with the cloud application.
+- cd into `be`
+- Execute `pyb install` to install dependencies, build the project, and install the `cloud` CLI to interact with the cloud application.
 - Available scripts and commands:
   - `source setup-env`: sets up the default environment variables to run various components of the project. By default, everything runs on localhost (127.0.0.1). The frontend runs on port 3000, the resource manager on port 8000, and the proxy on port 9000.
   - `cleanup`: to cleanup the docker containers created by the proxy. This is automatically called in the proxy if anything goes wrong, however, you may also manually call it to delete the containers.
