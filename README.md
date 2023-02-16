@@ -9,9 +9,9 @@
   - `pyb run_proxy`: runs the proxy.
   - `pyb run_resource_manager`: runs the resource manager.
 - You may manually set these environment variables to change the location where components are hosted:
-  - Frontend: `FRONTEND_HOST` and `FRONTEND_PORT`
-  - Resource manager: `API_HOST` and `API_PORT`
-  - Proxy: `PROXY_HOST` and `PROXY_PORT`
+  - Frontend: `FRONTEND_HOST` and `FRONTEND_PORT`.
+  - Resource manager: `API_HOST`, `API_PORT`, `DEFAULT_CLUSTER_NAME`, and `DEFAULT_POD_NAME`.
+  - Proxy: `PROXY_HOST`, `PROXY_PORT`, and `NUM_NODES` (number of default containers to spin up when the cloud application is initialized).
 
 
 ## The `cloud` CLI
