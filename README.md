@@ -2,7 +2,8 @@
 
 ## Build instructions
 - Clone the project and (optionally) start a python virtual environment in the project's root directory.
-- Execute `pyb install` to install dependencies, build the project, and install the `cloud` CLI to interact with the cloud application.
+### Backend
+- cd into `be` and Execute `pyb install` to install dependencies, build the project, and install the `cloud` CLI to interact with the cloud application.
 - Available scripts and commands:
   - `source setup-env`: sets up the default environment variables to run various components of the project. By default, everything runs on localhost (127.0.0.1). The frontend runs on port 3000, the resource manager on port 8000, and the proxy on port 9000.
   - `cleanup`: to cleanup the docker containers created by the proxy. This is automatically called in the proxy if anything goes wrong, however, you may also manually call it to delete the containers.
@@ -13,7 +14,10 @@
   - Frontend: `FRONTEND_HOST` and `FRONTEND_PORT`.
   - Resource manager: `API_HOST`, `API_PORT`, `DEFAULT_CLUSTER_NAME`, and `DEFAULT_POD_NAME`.
   - Proxy: `PROXY_HOST`, `PROXY_PORT`, and `NUM_NODES` (number of default containers to spin up when the cloud application is initialized).
-
+### Frontend
+- cd into `fe` and run `npm install`
+  - If `npm install` fails, you may have to uninstall node_modules and re-execute `npm install`
+- Run `npm run start` and navigate to `http://localhost:3000` in your browser of choice
 
 ## The `cloud` CLI
 The `cloud` CLI is built using the `typer` Python library and exposes several commands to interact with the cloud application.
