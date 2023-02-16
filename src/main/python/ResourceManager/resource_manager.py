@@ -107,17 +107,21 @@ async def create_cluster(cluster: ClusterReq):
 
 @app.get("/clusters")
 async def read_clusters():
-    return {"Clusters": database.get_clusters()}
+    clusters = database.get_clusters()
+    return {"Clusters": [{cluster_id: clusters[cluster_id]} for cluster_id in clusters.keys()]}
 
 @app.get("/clusters/{cluster_id}")
 async def read_cluster(cluster_id: str):
-    return {"cluster": database.get_cluster(cluster_id)}
+    cluster = database.get_cluster(cluster_id)
+    return {"cluster": cluster} if cluster else {f"The specified cluster with clusterId: {cluster_id} doesn't exist."}
 
 @app.get("/clusters/{cluster_id}/pods")
 async def read_cluster_nodes(cluster_id: str):
     cluster = database.get_cluster(cluster_id)
+    if not cluster:
+        return {f"The specified cluster with clusterId: {cluster_id} doesn't exist."}
     pods = database.get_pods()
-    return {"Pods": [pods[pod_id] for pod_id in cluster['pods']]}
+    return {"Pods": [{pod_id: pods[pod_id]} for pod_id in cluster['pods']]}
 
 @app.delete("/clusters/{cluster_id}")
 async def delete_cluster(cluster_id: str):
@@ -140,17 +144,21 @@ async def create_pod(pod: PodReq):
 
 @app.get("/pods")
 async def read_pods():
-    return {"Pods": database.get_pods()}
+    pods = database.get_pods()
+    return {"Pods": [{pod_id: pods[pod_id]} for pod_id in pods.keys()]}
 
 @app.get("/pods/{pod_id}")
 async def read_pod(pod_id: str):
-    return {"pod": database.get_pod(pod_id)}
+    pod = database.get_pod(pod_id)
+    return {"pod": pod} if pod else {f"The specified pod with podId: {pod_id} doens't exist."}
 
 @app.get("/pods/{pod_id}/nodes")
 async def read_pod_nodes(pod_id: str):
     pod = database.get_pod(pod_id)
+    if not pod:
+        return {f"The specified pod with podId: {pod_id} doesn't exist."}
     nodes = database.get_nodes()
-    return {"Nodes": [nodes[node_id] for node_id in pod['nodes']]}
+    return {"Nodes": [{node_id: nodes[node_id]} for node_id in pod['nodes']]}
 
 @app.delete("/pods/{pod_id}")
 async def delete_pod(pod_id: str):
@@ -204,11 +212,13 @@ async def create_node(node: NodeReq):
 
 @app.get("/nodes")
 async def read_nodes():
-    return {"Nodes": database.get_nodes()}
+    nodes = database.get_nodes()
+    return {"Nodes": [{node_id: nodes[node_id]} for node_id in nodes.keys()]}
 
 @app.get("/nodes/{node_id}")
 async def read_node(node_id: str):
-    return {"node": database.get_node(node_id)}
+    node = database.get_node(node_id)
+    return {"node": node} if node else {f"The specified node with nodeId: {node_id} doesn't exist."}
 
 @app.delete("/nodes/{node_id}")
 async def delete_node(node_id: str):
@@ -264,15 +274,18 @@ async def create_job(job: JobReq = Body(...), job_file: UploadFile = File(...)):
 
 @app.get("/jobs")
 async def read_jobs():
-    return {"Jobs": database.get_jobs()}
+    jobs = database.get_jobs()
+    return {"Jobs": [{job_id: jobs[job_id]} for job_id in jobs.keys()]}
 
 @app.get("/jobs/aborted")
 async def read_aborted_jobs():
-    return {"AbortedJobs": database.get_aborted_jobs()}
+    jobs = database.get_aborted_jobs()
+    return {"AbortedJobs": [{job_id: jobs[job_id]} for job_id in jobs.keys()]}
 
 @app.get("/jobs/{job_id}")
 async def read_job(job_id: str):
-    return {"job": database.get_job(job_id)}
+    job = database.get_job(job_id)
+    return {"job": job} if job else {f"The specified job with jobId: {job_id} doens't exist."}
 
 @app.delete("/jobs/{job_id}")
 async def delete_job(job_id: str):
