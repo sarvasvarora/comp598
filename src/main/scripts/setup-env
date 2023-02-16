@@ -1,0 +1,8 @@
+#!/bin/bash
+
+export API_HOST=localhost
+export API_PORT=8000
+export PROXY_HOST=localhost
+export PROXY_PORT=9000
+export FRONTEND_HOST=localhost
+export FRONTEND_PORT=3000

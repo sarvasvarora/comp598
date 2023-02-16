@@ -28,17 +28,12 @@ def set_properties(project):
 @task
 def run_resource_manager(project):
     sys.path.append('src/main/python')
-    os.environ['PROXY_HOST'] = "localhost"
-    os.environ['PROXY_PORT'] = "8000"
-    os.environ['API_HOST'] = "localhost"
-    os.environ['API_PORT'] = "3000"
-    uvicorn.run('ResourceManager.resource_manager:app', host='127.0.0.1', port=3000, log_level='info', reload=True)
+    from Client.env import API_HOST, API_PORT
+    uvicorn.run('ResourceManager.resource_manager:app', host=API_HOST, port=API_PORT, log_level='info', reload=True)
 
 @task
 def run_proxy(project):
     sys.path.append('src/main/python')
     from Resource.proxy import main
-    os.environ['PROXY_HOST'] = "localhost"
-    os.environ['PROXY_PORT'] = "8000"
     main()
 
