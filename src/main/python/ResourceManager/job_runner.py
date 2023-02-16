@@ -47,9 +47,9 @@ def process_job_launch(node_id: str, job_id: str, database: Database, proxy_sock
 
     msg = json.dumps({
         "cmd": "job launch",
-        "node_name": node['name'],
-        "job_id": job_id,
-        "file": data
+        "nodeName": node['name'],
+        "jobId": job_id,
+        "file": data.decode('utf-8')
     }).encode('utf-8')
     proxy_socket.send(msg)
     resp = json.loads(proxy_socket.recv(8192).decode('utf-8'))

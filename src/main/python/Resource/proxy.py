@@ -40,7 +40,7 @@ def main():
     while True:
         try:
             clntConnection, clntAddress = s.accept()
-            clntConnection.settimeout(120)
+            # clntConnection.settimeout(120)
             print("Connection from: " + str(clntAddress))
             # Starting a thread to handle the incoming request
             Thread(target = processConnection, args = (clntConnection, clntAddress)).start()
