@@ -150,7 +150,6 @@ def get_nodes(pod_id: int):
 def create_node(node: Node):
     global idle_nodes
     if node.pod_id in pods:
-        # TODO Add support for varrying size of containers
         n = getNodeByName(node.name)
         if n:
             return f"A node with name {node.name} already exists in the default pod"
@@ -222,13 +221,17 @@ def get_logs(job_id: int):
         return f"Error: Job_id {job_id} does not exist"
     else: 
         job = jobs[job_id]
-        node = nodes[job.nodeId]
+        # TODO Add support for running logs
+        if job.status != 'Completed':
+            return f"The job is not yet complete!"
+        else:
+            node = nodes[job.nodeId]
 
-        message2send = {'cmd': 'job log', 'node_name': node.name , 'pod_name': pods[node.pod_id].name, 'job_id': job_id}
-        socket.send(json.dumps(message2send, default=str).encode('utf-8'))
-        resp = json.loads(socket.recv(8192).decode('utf-8'))
-        print(resp)
-        return resp['log']
+            message2send = {'cmd': 'job log', 'node_name': node.name , 'pod_name': pods[node.pod_id].name, 'job_id': job_id}
+            socket.send(json.dumps(message2send, default=str).encode('utf-8'))
+            resp = json.loads(socket.recv(8192).decode('utf-8'))
+            print(resp)
+            return resp['log']
 
 @app.get("/nodeLogs/{node_id}")
 def get_node_logs(node_id: int):
@@ -308,6 +311,10 @@ def abort_job(job_id: int):
         # TODO Should we send a signal to the docker container to drop the work?
         try:
             node = nodes[jobs[job_id].nodeId]
+            '''message2send = {'cmd': 'job abort', 'node_name': node.name , 'job_id': job.jobId, 'file': data}
+            socket.send(json.dumps(message2send, default=str).encode('utf-8'))
+            resp = json.loads(socket.recv(8192).decode('utf-8'))
+            print(resp)'''
             jobs[job_id].status = 'Aborted'
             node.status = 'idle'
             idle_nodes.append(node.id)
