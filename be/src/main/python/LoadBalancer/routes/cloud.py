@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from .env import *
+from .models import PodReq, NodeReq
 
 
 router = APIRouter()
@@ -9,16 +10,16 @@ router = APIRouter()
 # POD ENDPOINTS
 ################
 @router.post("/pod")
-def add_pod():
+def add_pod(pod: PodReq):
     pass
 
 
-@router.delete("/pod")
+@router.delete("/pod/{pod_id}")
 def delete_pod():
     pass
 
 
-@router.update("/pod")
+@router.update("/pod/{pod_id}")
 def update_pod():
     pass
 
@@ -26,16 +27,16 @@ def update_pod():
 #################
 # NODE ENDPOINTS
 #################
-@router.post("/node")
-def add_node():
+@router.post("/nodes")
+def add_node(node: NodeReq):
     pass
 
 
-@router.delete("/node")
+@router.delete("/nodes/{node_id}")
 def delete_node():
     pass
 
 
-@router.update("/node")
+@router.update("/nodes/{node_id}")
 def update_node():
     pass
