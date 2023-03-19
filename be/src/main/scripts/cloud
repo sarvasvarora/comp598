@@ -1,0 +1,4 @@
+#!/usr/bin/env python3
+
+from Client.cloud import app
+app()
