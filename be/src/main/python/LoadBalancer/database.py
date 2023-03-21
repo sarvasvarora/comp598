@@ -130,7 +130,7 @@ class Database():
         if node_status == NodeStatus.ONLINE or node_status.lower() == "online":
             self._enable_haproxy_node(node_id)
         else:
-            self._delete_haproxy_node(node_id)
+            self._disable_haproxy_node(node_id)
     
     def delete_node(self, node_id: str) -> None:
         node = self.nodes.pop(node_id)
