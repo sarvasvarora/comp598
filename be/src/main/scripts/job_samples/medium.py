@@ -1,3 +1,4 @@
+# source code from https://github.com/pranavsr97/Image-Processing
 import cv2
 import numpy as np
 import time
@@ -6,17 +7,12 @@ def zoom(imgpath,x_coord,y_coord,scale):
 
 	img=cv2.imread(imgpath)
 
-	# Defining co-ordinates to create a window around the point of interest
-	# The window is proportional to size of original image, to maintain aspect ratio
-	# Defining the top left, and bottom right co-ordinates
 	tl_x = int(x_coord - (float(1)/float(scale) * float(1)/float(2) * img.shape[1]))
 	tl_y = int(y_coord - (float(1)/float(scale) * float(1)/float(2) * img.shape[0]))
 
 	br_x = int(tl_x + (float(1)/float(scale) * img.shape[1]))
 	br_y = int(tl_y + (float(1)/float(scale) * img.shape[0]))
 
-
-	# The window is adjusted, if it happens to be going out of the scope of the original image size
 	if (tl_x < 0):
 		br_x = br_x - tl_x
 		tl_x = 0
@@ -47,10 +43,7 @@ def zoom(imgpath,x_coord,y_coord,scale):
 	width_ratio=float(width1)/float(width2)
 	height_ratio=float(height1)/float(height2)
 
-	# A count variable is defined to keep track of number of elements stored in the array
 	count=0
-
-	# The new image's array is initialised
 	new=[]
 
 	# Every pixel of ther region of interest is traversed
@@ -62,8 +55,6 @@ def zoom(imgpath,x_coord,y_coord,scale):
 			x_diff = (width_ratio*j) - x
 			y_diff = (height_ratio*i) - y
 
-			# The neighbouring co-ordinates are compared
-			# The 'if-else' conditions are added to check for the extreme co-ordinates
 			if (x>=(width1-1) or y>=(height1-1)):
 				A_blue = roi[y][x][0]
 				A_red = roi[y][x][1]
@@ -119,7 +110,7 @@ def zoom(imgpath,x_coord,y_coord,scale):
 
 if __name__=="__main__":
 
-	start = time.time()
+	#start = time.time()
 	path = "images/medium.jpg"
 	upload_path = "images/zoomed_medium.jpg"
 	img=cv2.imread(path)
@@ -137,4 +128,4 @@ if __name__=="__main__":
 	# Zoomed image is saved as 'zoom_img.jpg'
 	cv2.imwrite(upload_path,final_img)
 
-	print(f"The program took {time.time() - start} seconds")
+	#print(f"The program took {time.time() - start} seconds")
