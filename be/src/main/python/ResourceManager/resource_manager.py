@@ -74,17 +74,17 @@ async def init():
     }
     DEFAULT_CLUSTER_ID = database.add_cluster(default_cluster)
     heavy_pod = {
-    "name": "HEAVY",
+    "name": "HEAVY_POD",
     "clusterId": DEFAULT_CLUSTER_ID,
     "nodes": []
     }
     medium_pod = {
-        "name": "MEDIUM",
+        "name": "MEDIUM_POD",
         "clusterId": DEFAULT_CLUSTER_ID,
         "nodes": []
     }
     light_pod = {
-        "name": "LIGHT",
+        "name": "LIGHT_POD",
         "clusterId": DEFAULT_CLUSTER_ID,
         "nodes": []
     }
