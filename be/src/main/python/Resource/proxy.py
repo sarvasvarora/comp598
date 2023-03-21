@@ -39,8 +39,8 @@ def main(type):
         print("Error occured while initializing the socket" + str(e))
         sys.exit(1)
 
-    # Creating 'jobs' directory for storing job files 
-    # os.mkdir(f"{ROOT_DIR}/jobs", mode = 0o777)
+    # Creating 'jobs' directory for storing job files if it doesn't exist
+    if not os.path.exists(f"{ROOT_DIR}/jobs"): os.mkdir(f"{ROOT_DIR}/jobs", mode = 0o777)
 
     while True:
         try:

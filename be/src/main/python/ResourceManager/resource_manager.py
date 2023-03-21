@@ -15,8 +15,9 @@ HEAVY_SOCKET = socket.socket()
 MEDIUM_SOCKET = socket.socket()
 LIGHT_SOCKET = socket.socket()
 
+
+
 SOCKETS = [HEAVY_SOCKET, MEDIUM_SOCKET, LIGHT_SOCKET]
-SOCKET_POD = {HEAVY_SOCKET: "HEAVY", MEDIUM_SOCKET: "MEDIUM", LIGHT_SOCKET: "LIGHT"}
 SOCKET_HOST = {HEAVY_SOCKET: HEAVY_HOST, MEDIUM_SOCKET: MEDIUM_HOST, LIGHT_SOCKET: LIGHT_HOST}
 SOCKET_PORT = {HEAVY_SOCKET: HEAVY_PORT, MEDIUM_SOCKET: MEDIUM_PORT, LIGHT_SOCKET: LIGHT_PORT}
 
@@ -60,7 +61,7 @@ async def read_root():
 #######################
 @app.get("/init")
 async def init():
-    global DEFAULT_CLUSTER_ID, DEFAULT_POD_ID, CLOUD_INIT
+    global DEFAULT_CLUSTER_ID, CLOUD_INIT
     if CLOUD_INIT:
         return {
             "res": "fail",
@@ -72,27 +73,39 @@ async def init():
         "pods": []
     }
     DEFAULT_CLUSTER_ID = database.add_cluster(default_cluster)
-    default_pod = {
-        "name": DEFAULT_POD_NAME,
+    heavy_pod = {
+    "name": "HEAVY",
+    "clusterId": DEFAULT_CLUSTER_ID,
+    "nodes": []
+    }
+    medium_pod = {
+        "name": "MEDIUM",
         "clusterId": DEFAULT_CLUSTER_ID,
         "nodes": []
     }
-    DEFAULT_POD_ID = database.add_pod(default_pod)
+    light_pod = {
+        "name": "LIGHT",
+        "clusterId": DEFAULT_CLUSTER_ID,
+        "nodes": []
+    }
+    SOCKET_POD = {HEAVY_SOCKET: heavy_pod, MEDIUM_SOCKET: medium_pod, LIGHT_SOCKET: light_pod}
+
 
     for SOCKET in SOCKETS:
     # The init command on the proxy side will create default nodes under the default pod
         try:
+            database.add_pod(SOCKET_POD[SOCKET])
             SOCKET.connect((SOCKET_HOST[SOCKET], SOCKET_PORT[SOCKET]))
             msg = json.dumps({
                 "cmd": "init",
-                "defaultPodName": SOCKET_POD[SOCKET] 
+                "defaultPodName": SOCKET_POD[SOCKET]["name"]
             }).encode('utf-8')
             SOCKET.send(msg)
             resp = SOCKET.recv(8192).decode('utf-8')
             print(json.loads(resp))
         except:
             database.delete_cluster(DEFAULT_CLUSTER_ID)
-            database.delete_pod(DEFAULT_POD_ID)
+            database.delete_pod(SOCKET_POD[SOCKET])
             return {
                 "res": "fail",
                 "msg": "Failed to connect to the proxy server"
