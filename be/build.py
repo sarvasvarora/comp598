@@ -37,3 +37,9 @@ def run_proxy(project):
     from Resource.proxy import main
     main()
 
+
+@task
+def run_load_balancer(project):
+    sys.path.append('src/main/python')
+    from LoadBalancer.env import LOAD_BALANCER_HOST, LOAD_BALANCER_PORT
+    uvicorn.run('LoadBalancer.load_balancer:app', host=LOAD_BALANCER_HOST, port=LOAD_BALANCER_PORT, log_level='info', reload=True)

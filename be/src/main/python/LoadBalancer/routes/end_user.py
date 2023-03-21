@@ -1,5 +1,7 @@
 from fastapi import APIRouter
-from .env import *
+from ..env import *
+from ..shared_resources import *
+from ..models import *
 
 
 router = APIRouter()
@@ -8,7 +10,7 @@ router = APIRouter()
 ####################
 # HEAVY JOB ENDPOINT
 ####################
-@app.get("/heavy")
+@router.get("/heavy")
 def heavy():
     pass
 
@@ -16,7 +18,7 @@ def heavy():
 #####################
 # MEDIUM JOB ENDPOINT
 #####################
-@app.get("/medium")
+@router.get("/medium")
 def medium():
     pass
 
@@ -24,6 +26,6 @@ def medium():
 ####################
 # LIGHT JOB ENDPOINT
 ####################
-@app.get("/light")
+@router.get("/light")
 def light():
     pass

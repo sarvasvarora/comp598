@@ -1,6 +1,8 @@
 from fastapi import APIRouter
-from .env import *
-from .models import PodReq, NodeReq
+from fastapi.encoders import jsonable_encoder
+from ..env import *
+from ..shared_resources import *
+from ..models import PodReq, NodeReq, NodeUpdateReq
 
 
 router = APIRouter()
@@ -11,16 +13,13 @@ router = APIRouter()
 ################
 @router.post("/pod")
 def add_pod(pod: PodReq):
-    pass
+    pod = jsonable_encoder(pod)
+    database.add_pod(pod)
+    return {"Successfully added pod."}
 
 
 @router.delete("/pod/{pod_id}")
 def delete_pod():
-    pass
-
-
-@router.update("/pod/{pod_id}")
-def update_pod():
     pass
 
 
@@ -29,14 +28,19 @@ def update_pod():
 #################
 @router.post("/nodes")
 def add_node(node: NodeReq):
-    pass
+    node = jsonable_encoder(node)
+    database.add_node(node)
+    return {"Successfully added node."}
 
 
 @router.delete("/nodes/{node_id}")
-def delete_node():
-    pass
+def delete_node(node_id: str):
+    database.delete_node(node_id)
+    return {"Successfully deleted node."}
 
 
-@router.update("/nodes/{node_id}")
-def update_node():
-    pass
+@router.post("/nodes/{node_id}")
+def update_node(node_id: str, data: NodeUpdateReq):
+    data = jsonable_encoder(data)
+    database.update_node_status(node_id, data['status'])
+    return {"Successfully updated node status."}

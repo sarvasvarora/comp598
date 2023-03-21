@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from .env import *
+from .shared_resources import *
 from .database import Database
 from .routes import cloud, end_user
 from .health_checker import HealthChecker
