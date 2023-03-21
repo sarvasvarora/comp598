@@ -2,7 +2,15 @@
 
 export API_HOST=localhost
 export API_PORT=8000
-export PROXY_HOST=localhost
-export PROXY_PORT=9000
+
+export HEAVY_HOST=localhost
+export HEAVY_PORT=9000
+
+export MEDIUM_HOST=localhost
+export MEDIUM_PORT=9001
+
+export LIGHT_HOST=localhost
+export LIGHT_PORT=9002
+
 export FRONTEND_HOST=localhost
 export FRONTEND_PORT=3000

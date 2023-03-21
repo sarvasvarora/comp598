@@ -32,8 +32,19 @@ def run_resource_manager(project):
     uvicorn.run('ResourceManager.resource_manager:app', host=API_HOST, port=API_PORT, log_level='info', reload=True)
 
 @task
-def run_proxy(project):
+def run_heavy(project):
     sys.path.append('src/main/python')
     from Resource.proxy import main
-    main()
+    main("heavy")
 
+@task
+def run_medium(project):
+    sys.path.append('src/main/python')
+    from Resource.proxy import main
+    main("medium")
+
+@task
+def run_light(project):
+    sys.path.append('src/main/python')
+    from Resource.proxy import main
+    main("light")

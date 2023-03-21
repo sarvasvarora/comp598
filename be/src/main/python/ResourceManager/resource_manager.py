@@ -10,8 +10,15 @@ from .status import *
 from .env import *
 from .job_runner import *
 
-# create a new socket
-PROXY_SOCKET = socket.socket()
+# create new sockets for each type of proxy
+HEAVY_SOCKET = socket.socket()
+MEDIUM_SOCKET = socket.socket()
+LIGHT_SOCKET = socket.socket()
+
+SOCKETS = [HEAVY_SOCKET, MEDIUM_SOCKET, LIGHT_SOCKET]
+SOCKET_POD = {HEAVY_SOCKET: "HEAVY", MEDIUM_SOCKET: "MEDIUM", LIGHT_SOCKET: "LIGHT"}
+SOCKET_HOST = {HEAVY_SOCKET: HEAVY_HOST, MEDIUM_SOCKET: MEDIUM_HOST, LIGHT_SOCKET: LIGHT_HOST}
+SOCKET_PORT = {HEAVY_SOCKET: HEAVY_PORT, MEDIUM_SOCKET: MEDIUM_PORT, LIGHT_SOCKET: LIGHT_PORT}
 
 # initialize the in-memory database
 database = Database()
@@ -72,23 +79,24 @@ async def init():
     }
     DEFAULT_POD_ID = database.add_pod(default_pod)
 
+    for SOCKET in SOCKETS:
     # The init command on the proxy side will create default nodes under the default pod
-    try:
-        PROXY_SOCKET.connect((PROXY_HOST, PROXY_PORT))
-        msg = json.dumps({
-            "cmd": "init",
-            "defaultPodName": DEFAULT_POD_NAME 
-        }).encode('utf-8')
-        PROXY_SOCKET.send(msg)
-        resp = PROXY_SOCKET.recv(8192).decode('utf-8')
-        print(json.loads(resp))
-    except:
-        database.delete_cluster(DEFAULT_CLUSTER_ID)
-        database.delete_pod(DEFAULT_POD_ID)
-        return {
-            "res": "fail",
-            "msg": "Failed to connect to the proxy server"
-        }
+        try:
+            SOCKET.connect((SOCKET_HOST[SOCKET], SOCKET_PORT[SOCKET]))
+            msg = json.dumps({
+                "cmd": "init",
+                "defaultPodName": SOCKET_POD[SOCKET] 
+            }).encode('utf-8')
+            SOCKET.send(msg)
+            resp = SOCKET.recv(8192).decode('utf-8')
+            print(json.loads(resp))
+        except:
+            database.delete_cluster(DEFAULT_CLUSTER_ID)
+            database.delete_pod(DEFAULT_POD_ID)
+            return {
+                "res": "fail",
+                "msg": "Failed to connect to the proxy server"
+            }
     CLOUD_INIT = True
     return {
         "res": "successful",

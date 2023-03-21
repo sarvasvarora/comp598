@@ -24,12 +24,14 @@ docker_client = docker.from_env()
 idle_containers = []
 in_use_containers = []
 
-def main():
+sockets = {"heavy": HEAVY_PORT, "medium": MEDIUM_PORT, "light": LIGHT_PORT}
+
+def main(type):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         print("Socket initialized")
-        s.bind(('', PROXY_PORT))
+        s.bind(('', sockets[type]))
         print("Socket binded successfully")
         # TODO what should be the max_connections?
         s.listen(4) # Max connections of 4
@@ -38,7 +40,7 @@ def main():
         sys.exit(1)
 
     # Creating 'jobs' directory for storing job files 
-    os.mkdir(f"{ROOT_DIR}/jobs", mode = 0o777)
+    # os.mkdir(f"{ROOT_DIR}/jobs", mode = 0o777)
 
     while True:
         try:
