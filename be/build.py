@@ -24,6 +24,10 @@ def set_properties(project):
     project.depends_on("rich")
     project.depends_on("python-multipart")
     project.depends_on("docker")
+    project.depends_on("moviepy")
+    project.depends_on("pillow")
+    project.depends_on("numpy")
+    project.depends_on("opencv-python")
 
 @task
 def run_resource_manager(project):
