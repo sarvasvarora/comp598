@@ -1,0 +1,22 @@
+{
+  "Pods": [{
+    "pod_0": {
+      "name": "HEAVY_POD",
+      "clusterId": "cluster_0",
+      "nodes": []
+    }
+  }, {
+    "pod_1": {
+      "name": "MEDIUM_POD",
+      "clusterId": "cluster_0",
+      "nodes": []
+    }
+  }, {
+    "pod_2": {
+      "name": "LIGHT_POD",
+      "clusterId": "cluster_0",
+      "nodes": []
+    }
+  }]
+}
+

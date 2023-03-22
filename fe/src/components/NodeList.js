@@ -18,15 +18,15 @@ const NodeList = ({ props }) => {
       .then(res => {
         setNodes(new Map(Object.entries(res.data['Nodes'])))
       })
-  }, [nodes])
+  }, [])
 
   // grab pods
   useEffect(() => {
     axios.get(`http://${RM_HOST}:${RM_PORT}/pods`)
-      .then(res => {
-        setPods(new Map(Object.entries(res.data['Pods'])));
-      })
-  }, [pods])
+      .then(res => 
+        setPods(res.data['Pods'].reduce((m, pod) => m.set(Object.values(pod)[0]['name'], pod), new Map()))
+      )
+  }, [])
 
 
   const getNodesFromPod = id => {
