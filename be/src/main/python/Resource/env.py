@@ -15,4 +15,4 @@ LIGHT_HOST= socket.gethostbyname(os.environ.get('LIGHT_HOST')) if os.environ.get
 LIGHT_PORT= int(os.environ.get('LIGHT_PORT')) if os.environ.get('LIGHT_PORT') is not None else 9002
 
 ROOT_DIR = os.getcwd()
-NUM_NODES = int(os.environ.get('NUM_NODES')) if os.environ.get('NUM_NODES') is not None else 10
+NUM_NODES = int(os.environ.get('NUM_NODES')) if os.environ.get('NUM_NODES') is not None else 3

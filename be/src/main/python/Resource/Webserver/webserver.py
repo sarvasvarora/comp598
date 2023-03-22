@@ -3,6 +3,7 @@ import socketserver
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
 from threading import Thread
+import sys
 
 class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -28,17 +29,15 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         return
 
-def start_server():
+def start_server(PORT):
     # Create an object of the above class
     handler_object = MyHttpRequestHandler
-    PORT = 8001
     my_server = socketserver.TCPServer(("", PORT), handler_object)
     my_server.serve_forever()
 
 def main():
-    start_server()
-    
- 
+    port_num = sys.argv[1]
+    start_server(int(port_num))
 
 if __name__ == '__main__':
     main()
