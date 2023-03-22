@@ -93,7 +93,6 @@ async def init():
         "status": PodStatus.RUNNING,
         "nodeLimit": 20
     }
-    print('line 96')
     SOCKET_POD = {HEAVY_SOCKET: heavy_pod, MEDIUM_SOCKET: medium_pod, LIGHT_SOCKET: light_pod}
 
     for SOCKET in SOCKETS:
@@ -121,8 +120,7 @@ async def init():
                         "podId": pod_id,
                         "status": "heavy"
                     })
-                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pod", data=data, headers=headers)
-                    print_json(data=res.json())
+                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pods", data=data, headers=headers)
                 except Exception as e:
                     print(str(e))
             elif SOCKET ==  MEDIUM_SOCKET:
@@ -132,8 +130,7 @@ async def init():
                         "podId": pod_id,
                         "status": "medium"
                     })
-                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pod", data=data, headers=headers)
-                    print_json(data=res.json())
+                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pods", data=data, headers=headers)
                 except Exception as e:
                     print(str(e))
             elif SOCKET == LIGHT_SOCKET:
@@ -143,8 +140,7 @@ async def init():
                         "podId": pod_id,
                         "status": "light"
                     })
-                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pod", data=data, headers=headers)
-                    print_json(data=res.json())
+                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pods", data=data, headers=headers)
                 except Exception as e:
                     print(str(e))
 
@@ -160,7 +156,6 @@ async def init():
         "res": "successful",
         "msg": "Cloud initialization successfully completed."
     }
-
 
 ###################
 # CLUSTER ENDPOINTS
@@ -257,18 +252,22 @@ async def create_node(node: NodeReq):
 
     # Set the cpu and memory config of the node
     PROXY_SOCKET = None
+    Pod_Host = None
     if pod['name'] == 'HEAVY_POD':
         node['cpu'] = 0.8
         node['memory'] = 500
         PROXY_SOCKET = HEAVY_SOCKET
+        Pod_Host = HEAVY_HOST
     elif pod['name'] == 'MEDIUM_POD':
         node['cpu'] = 0.5
         node['memory'] = 300
         PROXY_SOCKET = MEDIUM_SOCKET
+        Pod_Host = MEDIUM_HOST
     elif pod['name'] == 'LIGHT_POD':
         node['cpu'] = 0.3
         node['memory'] = 100
         PROXY_SOCKET = LIGHT_SOCKET
+        Pod_Host = LIGHT_HOST
 
     node_id = database.add_node(node)
 
@@ -282,7 +281,27 @@ async def create_node(node: NodeReq):
             }).encode('utf-8')
             PROXY_SOCKET.send(msg)
             resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
-            return resp
+            print(resp)
+
+            # Add node to the lb [with default new status]
+            print(f"Sending this uri to the load balancer {Pod_Host}:{resp['port']}")
+            try:
+                headers = {
+                    "Content-Type": "application/json",
+                    "accept": "application/json"
+                }
+                data = json.dumps({
+                    "name": node['name'],
+                    "nodeId": node_id,
+                    "podId": node['podId'],
+                    "uri": f"{Pod_Host}:{resp['port']}",
+                })
+                res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes", data=data, headers=headers)
+                print(res)
+                return res
+            except Exception as e:
+                print(str(e))
+                return {"An error occured in the load balancer."}
         except:
             database.delete_node(node_id)
             return {"An internal error occured while registering the specified node."}
@@ -362,13 +381,7 @@ async def launch_job_on_pod(pod_id: str):
             print("Found NEW node")
             # Switch status to ONLINE 
             node["status"] = NodeStatus.ONLINE
-            if pod["status"] == PodStatus.PAUSED:
-                # Do not notify the LB 
-                print("Do nothing")
-            elif pod["status"] == PodStatus.RUNNING:
-                # Notify the LB
-                print("Do something")
-            
+                
             # Start the HTTP web server on the node
             msg = json.dumps({
                 "cmd": "job launch on pod",
@@ -377,17 +390,39 @@ async def launch_job_on_pod(pod_id: str):
             }).encode('utf-8')
             try:
                 PROXY_SOCKET = None
+                Pod_Host = None
                 if pod['name'] == 'HEAVY_POD':
                     PROXY_SOCKET = HEAVY_SOCKET
+                    Pod_Host = HEAVY_HOST
                 elif pod['name'] == 'MEDIUM_POD':
                     PROXY_SOCKET = MEDIUM_SOCKET
+                    Pod_Host = MEDIUM_HOST
                 if pod['name'] == 'LIGHT_POD':
                     PROXY_SOCKET = LIGHT_SOCKET
+                    Pod_Host = LIGHT_HOST
                 PROXY_SOCKET.send(msg)
                 resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
-                return resp
             except:
                 return {"Internal server error. Unable to launch job on the specified pod."}
+
+            # Notify the laod balancer
+            # if pod["status"] == PodStatus.PAUSED -> Do not notify the LB  because the pod is paused
+            if pod["status"] == PodStatus.RUNNING:
+                print(f"{Pod_Host}:{resp['port']}")
+                headers = {
+                    "Content-Type": "application/json",
+                    "accept": "application/json"
+                }
+                try:
+                    data = json.dumps({
+                        "name": node['name'],
+                        "nodeId": n,
+                        "podId": node['podId'],
+                        "uri": f"{Pod_Host}:{resp['port']}"
+                    })
+                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes", data=data, headers=headers)
+                except Exception as e:
+                    print(str(e))
     
     return {"There are no NEW nodes under the specified pod. Job cannot be launched. Try out later."}
 

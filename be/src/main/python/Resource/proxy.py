@@ -82,6 +82,8 @@ def processConnection(clntConnection, clntAddress, startPort):
                 if container:
                     container.rename(clntData['nodeName'])
                     container.reload()
+                    port_str = list(container.ports.keys())[0]
+                    port_num = port_str.split('/')[0]
                     print(f"Renamed container to {container.name}")
                     # TODO Should be implemented here
                     if 'cpu' in clntData and clntData['cpu']:
@@ -92,7 +94,7 @@ def processConnection(clntConnection, clntAddress, startPort):
                         container.update(mem_limit=clntData['memory'])
                     if 'storage' in clntData and clntData['storage']: 
                         print('Storage update needed')
-                    message2send = {'nodeName': container.name, 'nodeStatus': container.status, 'timestamp':datetime.now(), 'status': 200}
+                    message2send = {'nodeName': container.name, 'nodeStatus': container.status, 'timestamp':datetime.now(), 'port':port_num, 'status': 200}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
                     print(f"No node under the podname {clntData['podName']}")
@@ -134,7 +136,7 @@ def processConnection(clntConnection, clntAddress, startPort):
                 if container:
                     # Running the server on the background
                     Thread(target = run_server_on_container, args = (container, port_num, )).start()
-                    message2send = {'timestamp':datetime.now(), 'status': 200, 'message':f"Server running on {clntData['nodeName']}"}
+                    message2send = {'timestamp':datetime.now(), 'status': 200, 'port': port_num, 'message':f"Server running on {clntData['nodeName']}"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
                     message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"Error occured on running the server on {clntData['nodeName']}"}
