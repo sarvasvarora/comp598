@@ -16,8 +16,7 @@ const NodeList = ({ props }) => {
   useEffect(() => {
     axios.get(`http://${RM_HOST}:${RM_PORT}/nodes`)
       .then(res => {
-      
-        setNodes(new Map(Object.entries(res.data['Nodes'])))
+        setNodes(res.data['Nodes'].reduce((m, node) => m.set(Object.keys(res.data['Nodes'][m.size])[0], Object.values(node)[0]), new Map()))
       })
   }, [])
 
