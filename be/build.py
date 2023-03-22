@@ -37,6 +37,7 @@ def run_heavy(project):
     from Resource.proxy import main
     main("heavy")
 
+<<<<<<< HEAD
 @task
 def run_medium(project):
     sys.path.append('src/main/python')
@@ -48,3 +49,11 @@ def run_light(project):
     sys.path.append('src/main/python')
     from Resource.proxy import main
     main("light")
+=======
+
+@task
+def run_load_balancer(project):
+    sys.path.append('src/main/python')
+    from LoadBalancer.env import LOAD_BALANCER_HOST, LOAD_BALANCER_PORT
+    uvicorn.run('LoadBalancer.load_balancer:app', host=LOAD_BALANCER_HOST, port=LOAD_BALANCER_PORT, log_level='info', reload=True)
+>>>>>>> origin/sarvasv/load-balancer
