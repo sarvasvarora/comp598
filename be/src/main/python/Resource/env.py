@@ -16,3 +16,6 @@ LIGHT_PORT= int(os.environ.get('LIGHT_PORT')) if os.environ.get('LIGHT_PORT') is
 
 ROOT_DIR = os.getcwd()
 NUM_NODES = int(os.environ.get('NUM_NODES')) if os.environ.get('NUM_NODES') is not None else 3
+
+LOAD_BALANCER_HOST = socket.gethostbyname(os.environ.get('LOAD_BALANCER_HOST')) if os.environ.get('LOAD_BALANCER_HOST') is not None else socket.gethostbyname("localhost")
+LOAD_BALANCER_PORT = int(os.environ.get('LOAD_BALANCER_PORT')) if os.environ.get('LOAD_BALANCER_PORT') is not None else 7000

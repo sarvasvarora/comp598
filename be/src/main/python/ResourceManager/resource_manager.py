@@ -390,16 +390,12 @@ async def launch_job_on_pod(pod_id: str):
             }).encode('utf-8')
             try:
                 PROXY_SOCKET = None
-                Pod_Host = None
                 if pod['name'] == 'HEAVY_POD':
                     PROXY_SOCKET = HEAVY_SOCKET
-                    Pod_Host = HEAVY_HOST
                 elif pod['name'] == 'MEDIUM_POD':
                     PROXY_SOCKET = MEDIUM_SOCKET
-                    Pod_Host = MEDIUM_HOST
                 if pod['name'] == 'LIGHT_POD':
                     PROXY_SOCKET = LIGHT_SOCKET
-                    Pod_Host = LIGHT_HOST
                 PROXY_SOCKET.send(msg)
                 resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
             except:
@@ -408,20 +404,19 @@ async def launch_job_on_pod(pod_id: str):
             # Notify the laod balancer
             # if pod["status"] == PodStatus.PAUSED -> Do not notify the LB  because the pod is paused
             if pod["status"] == PodStatus.RUNNING:
-                print(f"{Pod_Host}:{resp['port']}")
                 headers = {
                     "Content-Type": "application/json",
                     "accept": "application/json"
                 }
                 try:
                     data = json.dumps({
-                        "name": node['name'],
-                        "nodeId": n,
-                        "podId": node['podId'],
-                        "uri": f"{Pod_Host}:{resp['port']}"
+                        "status": "online"
                     })
-                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes", data=data, headers=headers)
+                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes/{n}", data=data, headers=headers)
+                    print(res)
+                    return res
                 except Exception as e:
+                    print("An error occured in the load balancer")
                     print(str(e))
     
     return {"There are no NEW nodes under the specified pod. Job cannot be launched. Try out later."}
