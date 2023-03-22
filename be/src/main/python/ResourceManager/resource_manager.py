@@ -9,6 +9,7 @@ from .models import *
 from .status import *
 from .env import *
 from .job_runner import *
+import requests
 
 # create new sockets for each type of proxy
 HEAVY_SOCKET = socket.socket()
@@ -92,13 +93,13 @@ async def init():
         "status": PodStatus.RUNNING,
         "nodeLimit": 20
     }
+    print('line 96')
     SOCKET_POD = {HEAVY_SOCKET: heavy_pod, MEDIUM_SOCKET: medium_pod, LIGHT_SOCKET: light_pod}
-
 
     for SOCKET in SOCKETS:
     # The init command on the proxy side will create default nodes under the default pod
         try:
-            database.add_pod(SOCKET_POD[SOCKET])
+            pod_id = database.add_pod(SOCKET_POD[SOCKET])
             SOCKET.connect((SOCKET_HOST[SOCKET], SOCKET_PORT[SOCKET]))
             msg = json.dumps({
                 "cmd": "init",
@@ -107,6 +108,46 @@ async def init():
             SOCKET.send(msg)
             resp = SOCKET.recv(8192).decode('utf-8')
             print(json.loads(resp))
+
+            # Call the Load balancer
+            headers = {
+                "Content-Type": "application/json",
+                "accept": "application/json"
+            }
+            if SOCKET ==  HEAVY_SOCKET:
+                try:
+                    data = json.dumps({
+                        "name": heavy_pod['name'],
+                        "podId": pod_id,
+                        "status": "heavy"
+                    })
+                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pod", data=data, headers=headers)
+                    print_json(data=res.json())
+                except Exception as e:
+                    print(str(e))
+            elif SOCKET ==  MEDIUM_SOCKET:
+                try:
+                    data = json.dumps({
+                        "name": medium_pod['name'],
+                        "podId": pod_id,
+                        "status": "medium"
+                    })
+                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pod", data=data, headers=headers)
+                    print_json(data=res.json())
+                except Exception as e:
+                    print(str(e))
+            elif SOCKET == LIGHT_SOCKET:
+                try:
+                    data = json.dumps({
+                        "name": light_pod['name'],
+                        "podId": pod_id,
+                        "status": "light"
+                    })
+                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pod", data=data, headers=headers)
+                    print_json(data=res.json())
+                except Exception as e:
+                    print(str(e))
+
         except:
             database.delete_cluster(DEFAULT_CLUSTER_ID)
             database.delete_pod(SOCKET_POD[SOCKET])

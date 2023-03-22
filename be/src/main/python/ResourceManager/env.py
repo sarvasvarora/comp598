@@ -18,3 +18,7 @@ LIGHT_PORT= int(os.environ.get('LIGHT_PORT')) if os.environ.get('LIGHT_PORT') is
 # set the default cluster name and pod name
 DEFAULT_CLUSTER_NAME = os.environ.get('DEFAULT_CLUSTER_NAME') or "DEFAULT_CLUSTER"
 DEFAULT_POD_NAME = os.environ.get('DEFAULT_POD_NAME') or "DEFAULT_POD"
+
+# obtain the LOAD_BALANCER_HOST and LOAD_BALANCER_PORT env variables
+LOAD_BALANCER_HOST = socket.gethostbyname(os.environ.get('LOAD_BALANCER_HOST')) if os.environ.get('LOAD_BALANCER_HOST') is not None else socket.gethostbyname("localhost")
+LOAD_BALANCER_PORT = int(os.environ.get('LOAD_BALANCER_PORT')) if os.environ.get('LOAD_BALANCER_PORT') is not None else 7000
