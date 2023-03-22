@@ -33,12 +33,15 @@ def register(
 
 
 @app.command()
-def rm(node_id: str = Argument(..., help='Node ID to remove.')):
+def rm(
+    node_id: str = Argument(..., help='Node ID to remove.'), 
+    pod_id: str = Argument(..., help='Pod ID to remove the node from.')
+):
     """
     Removes the specified node.
     [IMPORTANT] The command fails if the name does not exist or if its status is not “Idle”.
     """
-    res = requests.delete(f"http://{API_HOST}:{API_PORT}/nodes/{node_id}")
+    res = requests.delete(f"http://{API_HOST}:{API_PORT}/nodes/{node_id}/{pod_id}")
     try:
         print_json(data=res.json())
     except JSONDecodeError:

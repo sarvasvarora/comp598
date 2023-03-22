@@ -20,6 +20,7 @@ LIGHT_SOCKET = socket.socket()
 
 SOCKETS = [HEAVY_SOCKET, MEDIUM_SOCKET, LIGHT_SOCKET]
 SOCKET_HOST = {HEAVY_SOCKET: HEAVY_HOST, MEDIUM_SOCKET: MEDIUM_HOST, LIGHT_SOCKET: LIGHT_HOST}
+NAME_TO_SOCKET = {"HEAVY_POD": HEAVY_SOCKET, "MEDIUM_POD": MEDIUM_SOCKET, "LIGHT_POD": LIGHT_SOCKET}
 SOCKET_PORT = {HEAVY_SOCKET: HEAVY_PORT, MEDIUM_SOCKET: MEDIUM_PORT, LIGHT_SOCKET: LIGHT_PORT}
 
 # initialize the in-memory database
@@ -266,14 +267,17 @@ async def delete_node(node_id: str):
     node = database.get_node(node_id)
     if not node:
         return {"Unable to delete node. Specified node ID doesn't exist."}
-    if node['status'] == NodeStatus.ONLINE:
-        r = requests.get()
+    # if node['status'] == NodeStatus.ONLINE:
+    #     r = requests.get()
     try:
         msg = json.dumps({
             "cmd": "node rm",
             "nodeName": node['name'],
             "podName": database.get_pod(node['podId']).get('name')
         }).encode('utf-8')
+
+        PROXY_SOCKET = NAME_TO_SOCKET[database.get_pod(node['podId']).get('name')]
+
         PROXY_SOCKET.send(msg)
         resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
         print(resp)
