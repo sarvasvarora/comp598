@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 import socket
 import json
+import requests
 from json import JSONDecodeError
 from .database import Database
 from .models import *
@@ -260,29 +261,30 @@ async def read_node(node_id: str):
     node = database.get_node(node_id)
     return {"node": node} if node else {f"The specified node with nodeId: {node_id} doesn't exist."}
 
-@app.delete("/nodes/{node_id}")
+@app.delete("/nodes/{node_id}/{pod_id}")
 async def delete_node(node_id: str):
     node = database.get_node(node_id)
     if not node:
         return {"Unable to delete node. Specified node ID doesn't exist."}
-    if node['status'] == NodeStatus.IDLE or node['status'] == NodeStatus.IDLE.value:
-        try:
-            msg = json.dumps({
-                "cmd": "node rm",
-                "nodeName": node['name'],
-                "podName": database.get_pod(node['podId']).get('name')
-            }).encode('utf-8')
-            PROXY_SOCKET.send(msg)
-            resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
-            print(resp)
-            # delete the node from the database
-            node = database.delete_node(node_id)
-            return {
-                "node": node,
-                "msg": "Successfully deleted node."
-            }
-        except:
-            return {"Unable to delete node. Internal server error."}
+    if node['status'] == NodeStatus.ONLINE:
+        r = requests.get()
+    try:
+        msg = json.dumps({
+            "cmd": "node rm",
+            "nodeName": node['name'],
+            "podName": database.get_pod(node['podId']).get('name')
+        }).encode('utf-8')
+        PROXY_SOCKET.send(msg)
+        resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
+        print(resp)
+        # delete the node from the database
+        node = database.delete_node(node_id)
+        return {
+            "node": node,
+            "msg": "Successfully deleted node."
+        }
+    except:
+        return {"Unable to delete node. Internal server error."}
 
     return {"Unable to delete node. The node is not in IDLE status."}
 
