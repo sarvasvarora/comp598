@@ -15,8 +15,6 @@ HEAVY_SOCKET = socket.socket()
 MEDIUM_SOCKET = socket.socket()
 LIGHT_SOCKET = socket.socket()
 
-
-
 SOCKETS = [HEAVY_SOCKET, MEDIUM_SOCKET, LIGHT_SOCKET]
 SOCKET_HOST = {HEAVY_SOCKET: HEAVY_HOST, MEDIUM_SOCKET: MEDIUM_HOST, LIGHT_SOCKET: LIGHT_HOST}
 SOCKET_PORT = {HEAVY_SOCKET: HEAVY_PORT, MEDIUM_SOCKET: MEDIUM_PORT, LIGHT_SOCKET: LIGHT_PORT}
@@ -315,6 +313,7 @@ async def create_job(job: JobReq = Body(...), job_file: UploadFile = File(...)):
 @app.get("/jobs/launch/{pod_id}")
 async def launch_job_on_pod(pod_id: str):
     pod = database.get_pod(pod_id)
+    print(pod)
     # pick up the first node with NEW status in the specified pod
     for n in pod['nodes']:
         node = database.get_node(n)
@@ -349,7 +348,7 @@ async def launch_job_on_pod(pod_id: str):
             except:
                 return {"Internal server error. Unable to launch job on the specified pod."}
     
-    return {"There are no NEW nodes under the specified pod. Job cannot be launched. Try out later."} 
+    return {"There are no NEW nodes under the specified pod. Job cannot be launched. Try out later."}
 
 @app.get("/jobs")
 async def read_jobs():

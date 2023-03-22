@@ -25,6 +25,7 @@ idle_containers = []
 in_use_containers = []
 
 sockets = {"heavy": HEAVY_PORT, "medium": MEDIUM_PORT, "light": LIGHT_PORT}
+node_start_ports = {"heavy": 5001, "medium": 6001, "light": 7001}
 
 def main(type):
     try:
@@ -48,14 +49,14 @@ def main(type):
             # clntConnection.settimeout(120)
             print("Connection from: " + str(clntAddress))
             # Starting a thread to handle the incoming request
-            Thread(target = processConnection, args = (clntConnection, clntAddress)).start()
+            Thread(target = processConnection, args = (clntConnection, clntAddress, node_start_ports[type])).start()
         except: 
             s.close()
             cleanup()
             print('Exitting proxy server')
             sys.exit(1)
 
-def processConnection(clntConnection, clntAddress):
+def processConnection(clntConnection, clntAddress, startPort):
     while True:
         try:
             # Should be blocking
@@ -63,10 +64,11 @@ def processConnection(clntConnection, clntAddress):
             if clntData['cmd'] == 'init':
                 # Create 50 docker containers as vms under the default cluster and pod
                 print("Started creating containers ...")
-                # Temporary change
                 for i in range(NUM_NODES):
                     d_name = f"{clntData['defaultPodName']}_node_{i}"
-                    c = docker_client.containers.run("alpine", name=d_name, detach=True, tty=True, volumes={f"{ROOT_DIR}/jobs" : {'bind': '/mnt/vol1', 'mode': 'ro'}})
+                    port_num = startPort + i
+                    print(port_num)
+                    c = docker_client.containers.run("alpine", name=d_name, detach=True, tty=True, ports={f'{port_num}/tcp': port_num}, volumes={f"{os.getcwd()}/Webserver" : {'bind': '/mnt/vol1', 'mode': 'ro'}})
                     idle_containers.append(c)
                 print("Successfully made all containers")
                 message2send = {'timestamp':datetime.now(), 'status': 200}
@@ -77,14 +79,14 @@ def processConnection(clntConnection, clntAddress):
                     container.rename(clntData['nodeName'])
                     container.reload()
                     print(f"Renamed container to {container.name}")
+                    # TODO Should be implemented here
                     if 'cpu' in clntData and clntData['cpu']:
                         print('CPU update needed')
                         container.update(cpu_shares=clntData['cpu'])
                     if 'memory' in clntData and clntData['memory']:
                         print('Memory update needed')
                         container.update(mem_limit=clntData['memory'])
-                    if 'storage' in clntData and clntData['storage']:
-                        # TODO Not an easy short way to limit storage per container 
+                    if 'storage' in clntData and clntData['storage']: 
                         print('Storage update needed')
                     message2send = {'nodeName': container.name, 'nodeStatus': container.status, 'timestamp':datetime.now(), 'status': 200}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
@@ -124,10 +126,12 @@ def processConnection(clntConnection, clntAddress):
             elif clntData['cmd'] == "job launch on pod":
                 container = docker_client.containers.get(clntData['nodeName'])
                 if container:
-                    message2send = {'timestamp':datetime.now(), 'status': 200, 'message':f"Found {clntData['nodeName']} to launch the job"}
+                    # Running the server on the background
+                    Thread(target = run_server_on_container, args = (container, )).start()
+                    message2send = {'timestamp':datetime.now(), 'status': 200, 'message':f"Server running on {clntData['nodeName']}"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
-                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {clntData['nodeName']} to launch the job"}
+                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"Error occured on running the server on {clntData['nodeName']}"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
             elif clntData['cmd'] == "job log":
                 container = docker_client.containers.get(clntData['nodeName'])
@@ -155,6 +159,11 @@ def processConnection(clntConnection, clntAddress):
             print("Closed collection with client.")
             print(str(e))
             break
+
+def run_server_on_container(container):
+    #output = container.exec_run(f"sh -c 'apk add python3 && cd /mnt/vol1 && python3 webserver.py'", stderr=True, stdout=True)
+    output = container.exec_run(f"sh -c 'apk add python3 && cd /mnt/vol1 && ls'", stderr=True, stdout=True)
+    print(output)
 
 def findIdleContainer(pod_name):
     for c in idle_containers:

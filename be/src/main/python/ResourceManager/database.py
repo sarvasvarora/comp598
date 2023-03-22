@@ -108,7 +108,7 @@ class Database():
             "name": pod['name'],
             "clusterId": pod['clusterId'],
             "nodes": [],
-            "staus": pod['status'],
+            "status": pod['status'],
             "nodeLimit": pod['nodeLimit']
         }
         # append the pod ID to the associated cluster record
