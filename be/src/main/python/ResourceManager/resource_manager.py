@@ -76,17 +76,23 @@ async def init():
     heavy_pod = {
     "name": "HEAVY_POD",
     "clusterId": DEFAULT_CLUSTER_ID,
-    "nodes": []
+    "nodes": [],
+    "status": PodStatus.RUNNING,
+    "nodeLimit": 10
     }
     medium_pod = {
         "name": "MEDIUM_POD",
         "clusterId": DEFAULT_CLUSTER_ID,
-        "nodes": []
+        "nodes": [],
+        "status": PodStatus.RUNNING,
+        "nodeLimit": 15
     }
     light_pod = {
         "name": "LIGHT_POD",
         "clusterId": DEFAULT_CLUSTER_ID,
-        "nodes": []
+        "nodes": [],
+        "status": PodStatus.RUNNING,
+        "nodeLimit": 20
     }
     SOCKET_POD = {HEAVY_SOCKET: heavy_pod, MEDIUM_SOCKET: medium_pod, LIGHT_SOCKET: light_pod}
 
@@ -196,9 +202,35 @@ async def delete_pod(pod_id: str):
 async def create_node(node: NodeReq):
     # add node to the database
     node = jsonable_encoder(node)
-    if node.get('podId', None) is None:
-        node['podId'] = DEFAULT_POD_ID
-    node['status'] = NodeStatus.IDLE
+    pod = database.get_pod(node['podId'])
+
+    # Check for uniqueness of the name of the node
+    for n_id in pod['nodes']:
+        n = database.get_node(n_id)
+        if n['name'] == node['name']:
+            return {f"Another node with the same name exists in pod {pod['name']}"}
+
+    # Check the limit of the nodes registered in this pod
+    if pod['nodeLimit'] == len(pod['nodes']):
+         return {f"Cannot add a new node under the pod as the limit of nodes is reached."}
+
+    node['status'] = NodeStatus.NEW
+
+    # Set the cpu and memory config of the node
+    PROXY_SOCKET = None
+    if pod['name'] == 'HEAVY_POD':
+        node['cpu'] = 0.8
+        node['memory'] = 500
+        PROXY_SOCKET = HEAVY_SOCKET
+    elif pod['name'] == 'MEDIUM_POD':
+        node['cpu'] = 0.5
+        node['memory'] = 300
+        PROXY_SOCKET = MEDIUM_SOCKET
+    elif pod['name'] == 'LIGHT_POD':
+        node['cpu'] = 0.3
+        node['memory'] = 100
+        PROXY_SOCKET = LIGHT_SOCKET
+
     node_id = database.add_node(node)
 
     if node_id is not None:
@@ -211,23 +243,10 @@ async def create_node(node: NodeReq):
             }).encode('utf-8')
             PROXY_SOCKET.send(msg)
             resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
+            return resp
         except:
             database.delete_node(node_id)
             return {"An internal error occured while registering the specified node."}
-
-        # node was created -> schedule a job to execute on the node and return the node ID
-        if resp['status'] == 200:
-            pending_job_id = get_first_registered_job(database)
-            if pending_job_id:
-                # assign the job to the current node
-                execute_job(pending_job_id, node_id, database, PROXY_SOCKET)
-                print(f"Pending job with jobId: {pending_job_id} is now assigned to node with nodeId: {node_id}")
-                return {
-                    "nodeId": node_id,
-                    "msg": f"Pending job with jobId: {pending_job_id} was assigned to this node."
-                }
-            else:
-                return {"nodeId": node_id}
 
     return {"Unable to add node. Please specify a valid pod ID."}
 
@@ -292,6 +311,45 @@ async def create_job(job: JobReq = Body(...), job_file: UploadFile = File(...)):
             "jobId": job_id,
             "msg": "No idle node available to dispatch the job at the moment. Job will be executed as soon as a node becomes available."
         }
+
+@app.get("/jobs/launch/{pod_id}")
+async def launch_job_on_pod(pod_id: str):
+    pod = database.get_pod(pod_id)
+    # pick up the first node with NEW status in the specified pod
+    for n in pod['nodes']:
+        node = database.get_node(n)
+        if node["status"] == NodeStatus.NEW:
+            print("Found NEW node")
+            # Switch status to ONLINE 
+            node["status"] = NodeStatus.ONLINE
+            if pod["status"] == PodStatus.PAUSED:
+                # Do not notify the LB 
+                print("Do nothing")
+            elif pod["status"] == PodStatus.RUNNING:
+                # Notify the LB
+                print("Do something")
+            
+            # Start the HTTP web server on the node
+            msg = json.dumps({
+                "cmd": "job launch on pod",
+                "nodeName": node['name'],
+                "podName": pod['name']
+            }).encode('utf-8')
+            try:
+                PROXY_SOCKET = None
+                if pod['name'] == 'HEAVY_POD':
+                    PROXY_SOCKET = HEAVY_SOCKET
+                elif pod['name'] == 'MEDIUM_POD':
+                    PROXY_SOCKET = MEDIUM_SOCKET
+                if pod['name'] == 'LIGHT_POD':
+                    PROXY_SOCKET = LIGHT_SOCKET
+                PROXY_SOCKET.send(msg)
+                resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
+                return resp
+            except:
+                return {"Internal server error. Unable to launch job on the specified pod."}
+    
+    return {"There are no NEW nodes under the specified pod. Job cannot be launched. Try out later."} 
 
 @app.get("/jobs")
 async def read_jobs():

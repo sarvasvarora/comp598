@@ -12,11 +12,10 @@ app = Typer()
 @app.command()
 def register(
     node_name: str = Argument(..., help='Node name to register'),
-    pod_id: str = Option(None, help='Pod ID to register the new node to.')
+    pod_id: str = Argument(..., help='Pod ID to register the new node to.')
 ):
     """
     Creates a new node and registers it to the specified pod ID.
-    If no pod ID is specified, the newly created node is registered to the default pod.
     """
     headers = {
         "Content-Type": "application/json",

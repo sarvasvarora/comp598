@@ -9,22 +9,12 @@ from .env import *
 
 app = Typer()
 
-
 @app.command()
-def launch(path_to_job: str = Argument(..., help='Path to the job to execute.')):
+def launch(pod_id: str = Argument(..., help='Pod_id to launch the job on.')):
     """
-    Launches the specified job.
+    Launches a job (web server) on the specified pod.
     """
-    job = json.dumps({
-        "filename": os.path.basename(path_to_job)
-    })
-    data = {
-        "job": job
-    }
-    file = {
-        "job_file": open(path_to_job, 'rb')
-    }
-    res = requests.post(f"http://{API_HOST}:{API_PORT}/jobs", data=data, files=file)
+    res = requests.get(f"http://{API_HOST}:{API_PORT}/jobs/launch/{pod_id}")
     try:
         print_json(data=res.json())
     except JSONDecodeError:

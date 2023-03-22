@@ -20,6 +20,8 @@ Pod = {
     "name": str,
     "clusterId": str
     "nodes": List[str],
+    "status": PodStatus/str,
+    "nodeLimit: int
 }
 
 
@@ -105,7 +107,9 @@ class Database():
         data = {
             "name": pod['name'],
             "clusterId": pod['clusterId'],
-            "nodes": []
+            "nodes": [],
+            "staus": pod['status'],
+            "nodeLimit": pod['nodeLimit']
         }
         # append the pod ID to the associated cluster record
         self.clusters[pod['clusterId']]['pods'].append(id)

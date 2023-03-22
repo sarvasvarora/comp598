@@ -45,7 +45,6 @@ def rm(pod_id: str = Argument(..., help='Pod ID to remove from the cloud.')):
     except JSONDecodeError:
         print(res.text)
 
-
 @app.command()
 def ls(
     pod_id: str = Option(None, help='Pod ID to fetch the details of.'),

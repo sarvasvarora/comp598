@@ -1,9 +1,12 @@
 from enum import Enum
 
+class PodStatus(Enum):
+    RUNNING = "running"
+    PAUSED = "paused"
 
 class NodeStatus(Enum):
-    IDLE = "idle"
-    RUNNING = "running"
+    NEW = "new"
+    ONLINE = "online"
 
 class JobStatus(Enum):
     REGISTERED = "registered"

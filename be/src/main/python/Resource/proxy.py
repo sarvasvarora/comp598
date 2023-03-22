@@ -63,7 +63,7 @@ def processConnection(clntConnection, clntAddress):
             if clntData['cmd'] == 'init':
                 # Create 50 docker containers as vms under the default cluster and pod
                 print("Started creating containers ...")
-                # TODO The number of containers to initialize should be configured
+                # Temporary change
                 for i in range(NUM_NODES):
                     d_name = f"{clntData['defaultPodName']}_node_{i}"
                     c = docker_client.containers.run("alpine", name=d_name, detach=True, tty=True, volumes={f"{ROOT_DIR}/jobs" : {'bind': '/mnt/vol1', 'mode': 'ro'}})
@@ -119,6 +119,14 @@ def processConnection(clntConnection, clntAddress):
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
                     print(f"No node named {clntData['nodeName']} to launch the job")
+                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {clntData['nodeName']} to launch the job"}
+                    clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+            elif clntData['cmd'] == "job launch on pod":
+                container = docker_client.containers.get(clntData['nodeName'])
+                if container:
+                    message2send = {'timestamp':datetime.now(), 'status': 200, 'message':f"Found {clntData['nodeName']} to launch the job"}
+                    clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+                else:
                     message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {clntData['nodeName']} to launch the job"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
             elif clntData['cmd'] == "job log":
