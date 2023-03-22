@@ -15,3 +15,7 @@ HAPROXY_SOCKET_ADDRESS = os.environ.get('HAPROXY_SOCKET_ADDRESS') if os.environ.
 HAPROXY_HEAVY_BACKEND_NAME = os.environ.get('HAPROXY_HEAVY_BACKEND_NAME') if os.environ.get('HAPROXY_HEAVY_BACKEND_NAME') is not None else "heavy_backend"
 HAPROXY_MEDIUM_BACKEND_NAME = os.environ.get('HAPROXY_MEDIUM_BACKEND_NAME') if os.environ.get('HAPROXY_MEDIUM_BACKEND_NAME') is not None else "medium_backend"
 HAPROXY_LIGHT_BACKEND_NAME = os.environ.get('HAPROXY_LIGHT_BACKEND_NAME') if os.environ.get('HAPROXY_LIGHT_BACKEND_NAME') is not None else "light_backend"
+HAPROXY_FRONTEND_PORT = int(os.environ.get('HAPROXY_FRONTEND_PORT')) if os.environ.get('HAPROXY_FRONTEND_PORT') is not None else 9000
+
+# Request monitor env variables
+REQUEST_MONITOR_LOG_FILENAME = os.environ.get('REQUEST_MONITOR_LOG_FILENAME') if os.environ.get('REQUEST_MONITOR_LOG_FILENAME') is not None else "./req_monitor.log.txt"

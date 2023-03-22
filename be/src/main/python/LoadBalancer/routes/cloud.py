@@ -27,20 +27,20 @@ def delete_pod():
 # NODE ENDPOINTS
 #################
 @router.post("/nodes")
-def add_node(node: NodeReq):
+async def add_node(node: NodeReq):
     node = jsonable_encoder(node)
     database.add_node(node)
     return {"Successfully added node."}
 
 
 @router.delete("/nodes/{node_id}")
-def delete_node(node_id: str):
+async def delete_node(node_id: str):
     database.delete_node(node_id)
     return {"Successfully deleted node."}
 
 
 @router.post("/nodes/{node_id}")
-def update_node(node_id: str, data: NodeUpdateReq):
+async def update_node(node_id: str, data: NodeUpdateReq):
     data = jsonable_encoder(data)
     database.update_node_status(node_id, data['status'])
     return {"Successfully updated node status."}
