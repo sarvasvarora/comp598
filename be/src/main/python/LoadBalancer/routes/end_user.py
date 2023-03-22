@@ -25,7 +25,11 @@ async def heavy(req: Request, data = Body(...)):
     res = await requests.post(f"localhost:{HAPROXY_FRONTEND_PORT}/heavy", data=data, headers=headers)
     time_elapsed = res.elapsed.total_seconds()
     # log the request information
-    request_monitor.log_request(job_type='heavy', client_host=client_host, request_arrival_time=req_arrival_time, time_elapsed=time_elapsed)
+    request_monitor.log_request(
+        job_type='heavy',
+        client_host=client_host,
+        request_arrival_time=req_arrival_time,
+        time_elapsed=time_elapsed)
     return res
 
 
@@ -44,7 +48,11 @@ async def medium(req: Request, data = Body(...)):
     res = await requests.post(f"localhost:{HAPROXY_FRONTEND_PORT}/medium", data=data, headers=headers)
     time_elapsed = res.elapsed.total_seconds()
     # log the request information
-    request_monitor.log_request(job_type='medium', client_host=client_host, request_arrival_time=req_arrival_time, time_elapsed=time_elapsed)
+    request_monitor.log_request(
+        job_type='medium',
+        client_host=client_host,
+        request_arrival_time=req_arrival_time,
+        time_elapsed=time_elapsed)
     return res
 
 
@@ -63,5 +71,9 @@ async def light(req: Request, data = Body(...)):
     res = await requests.post(f"localhost:{HAPROXY_FRONTEND_PORT}/light", data=data, headers=headers)
     time_elapsed = res.elapsed.total_seconds()
     # log the request information
-    request_monitor.log_request(job_type='light', client_host=client_host, request_arrival_time=req_arrival_time, time_elapsed=time_elapsed)
+    request_monitor.log_request(
+        job_type='light',
+        client_host=client_host,
+        request_arrival_time=req_arrival_time,
+        time_elapsed=time_elapsed)
     return res
