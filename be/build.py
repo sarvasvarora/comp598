@@ -24,6 +24,7 @@ def set_properties(project):
     project.depends_on("rich")
     project.depends_on("python-multipart")
     project.depends_on("docker")
+    project.depends_on("requests-async")
 
 @task
 def run_resource_manager(project):
@@ -37,6 +38,7 @@ def run_heavy(project):
     from Resource.proxy import main
     main("heavy")
 
+<<<<<<< HEAD
 @task
 def run_medium(project):
     sys.path.append('src/main/python')
@@ -48,3 +50,13 @@ def run_light(project):
     sys.path.append('src/main/python')
     from Resource.proxy import main
     main("light")
+=======
+
+@task
+def run_load_balancer(project):
+    sys.path.append('src/main/python')
+    from LoadBalancer.env import LOAD_BALANCER_HOST, LOAD_BALANCER_PORT
+    # start HAProxy
+    os.system("pgrep haproxy || sudo haproxy -f haproxy.cfg &")
+    uvicorn.run('LoadBalancer.load_balancer:app', host=LOAD_BALANCER_HOST, port=LOAD_BALANCER_PORT, log_level='info', reload=True)
+>>>>>>> remotes/origin/sarvasv/load-balancer
