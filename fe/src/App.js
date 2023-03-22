@@ -6,9 +6,6 @@ const RM_HOST = 'localhost';
 const RM_PORT = '8000';
 
 function App() {
-  //   setTimeout(function(){
-  //     window.location.reload();
-  // }, 1000);
 
   return (
     <div className="App">

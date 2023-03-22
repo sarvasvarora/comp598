@@ -16,6 +16,7 @@ const NodeList = ({ props }) => {
   useEffect(() => {
     axios.get(`http://${RM_HOST}:${RM_PORT}/nodes`)
       .then(res => {
+      
         setNodes(new Map(Object.entries(res.data['Nodes'])))
       })
   }, [])
@@ -23,9 +24,7 @@ const NodeList = ({ props }) => {
   // grab pods
   useEffect(() => {
     axios.get(`http://${RM_HOST}:${RM_PORT}/pods`)
-      .then(res => 
-        setPods(res.data['Pods'].reduce((m, pod) => m.set(Object.values(pod)[0]['name'], pod), new Map()))
-      )
+      .then(res => setPods(res.data['Pods'].reduce((m, pod) => m.set(Object.keys(res.data['Pods'][m.size])[0], Object.values(pod)[0]), new Map())))
   }, [])
 
 
@@ -44,7 +43,7 @@ const NodeList = ({ props }) => {
   const renderPod = podId => {
     return (
       <div>
-        <h2>{podId}</h2>
+        <h2>{pods.get(podId).name}</h2>
         <ul>{renderNodes(podId)}</ul>
       </div>
     )

@@ -3,20 +3,25 @@
     "pod_0": {
       "name": "HEAVY_POD",
       "clusterId": "cluster_0",
-      "nodes": []
+      "nodes": ["node_0"],
+      "staus": "running",
+      "nodeLimit": 10
     }
   }, {
     "pod_1": {
       "name": "MEDIUM_POD",
       "clusterId": "cluster_0",
-      "nodes": []
+      "nodes": [],
+      "staus": "running",
+      "nodeLimit": 15
     }
   }, {
     "pod_2": {
       "name": "LIGHT_POD",
       "clusterId": "cluster_0",
-      "nodes": []
+      "nodes": [],
+      "staus": "running",
+      "nodeLimit": 20
     }
   }]
 }
-
