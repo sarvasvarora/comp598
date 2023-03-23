@@ -6,7 +6,11 @@ class NodeStatus(Enum):
     ONLINE = "online"
 
 
-class PodStatus(Enum):
+class PodType(Enum):
     HEAVY = "heavy"
     MEDIUM = "medium"
     LIGHT = "light"
+
+class PodStatus(Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
