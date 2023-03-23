@@ -45,8 +45,9 @@ async def add_node(node: NodeReq):
 
 @router.delete("/nodes/{node_id}")
 def delete_node(node_id: str):
+    node = database.get_node(node_id)
     database.delete_node(node_id)
-    pod = database.get_pod(node_id)
+    pod = database.get_pod(node['podId'])
     request_monitor.log_num_nodes(pod['type'], len(pod['nodes']))
     return {"Successfully deleted node."}
 

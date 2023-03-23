@@ -81,7 +81,7 @@ class Database():
                 self.light_pod_id = pod['podId']
 
     def delete_pod(self, pod_id: str) -> None:
-        node_ids = self.pods['nodes'].copy()
+        node_ids = self.pods['pod_id']['nodes'].copy()
         for node_id in node_ids:
             self.delete_node(node_id)
         self.pods.pop(pod_id)
@@ -168,7 +168,8 @@ class Database():
     def update_node_status(self, node_id: str, node_status: NodeStatus | str) -> None:
         self.nodes[node_id]['status'] = node_status
         if node_status == NodeStatus.ONLINE or node_status.lower() == "online":
-            self._enable_haproxy_node(node_id)
+            #self._enable_haproxy_node(node_id)
+            pass
         else:
             self._disable_haproxy_node(node_id)
 
@@ -178,4 +179,4 @@ class Database():
         self._delete_haproxy_node(node_id)
 
     def get_node(self, node_id: str) -> dict:
-        return self.get(node_id, None)
+        return self.nodes.get(node_id, None)

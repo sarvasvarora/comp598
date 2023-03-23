@@ -118,7 +118,7 @@ async def init():
                     data = json.dumps({
                         "name": heavy_pod['name'],
                         "podId": pod_id,
-                        "status": "heavy"
+                        "type": "heavy"
                     })
                     res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pods", data=data, headers=headers)
                 except Exception as e:
@@ -128,7 +128,7 @@ async def init():
                     data = json.dumps({
                         "name": medium_pod['name'],
                         "podId": pod_id,
-                        "status": "medium"
+                        "type": "medium"
                     })
                     res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pods", data=data, headers=headers)
                 except Exception as e:
@@ -138,7 +138,7 @@ async def init():
                     data = json.dumps({
                         "name": light_pod['name'],
                         "podId": pod_id,
-                        "status": "light"
+                        "type": "light"
                     })
                     res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pods", data=data, headers=headers)
                 except Exception as e:
@@ -298,7 +298,7 @@ async def create_node(node: NodeReq):
                 })
                 res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes", data=data, headers=headers)
                 print(res)
-                return res
+                return res.json()
             except Exception as e:
                 print(str(e))
                 return {"An error occured in the load balancer."}
@@ -321,28 +321,68 @@ async def read_node(node_id: str):
 @app.delete("/nodes/{node_id}")
 async def delete_node(node_id: str):
     node = database.get_node(node_id)
+    node_pod = database.get_pod(node['podId'])
+    PROXY_SOCKET = None
     if not node:
         return {"Unable to delete node. Specified node ID doesn't exist."}
-    if node['status'] == NodeStatus.IDLE or node['status'] == NodeStatus.IDLE.value:
+
+    # Determine which proxy to send to
+    if node_pod['name'] == 'HEAVY_POD':
+        PROXY_SOCKET = HEAVY_SOCKET
+    elif node_pod['name'] == 'MEDIUM_POD':
+        PROXY_SOCKET = MEDIUM_SOCKET
+    elif node_pod['name'] == 'LIGHT_POD':
+        PROXY_SOCKET = LIGHT_SOCKET
+
+    if node['status'] == NodeStatus.NEW or node['status'] == NodeStatus.NEW.value:
         try:
             msg = json.dumps({
                 "cmd": "node rm",
                 "nodeName": node['name'],
-                "podName": database.get_pod(node['podId']).get('name')
+                "podName": node_pod.get('name')
             }).encode('utf-8')
             PROXY_SOCKET.send(msg)
             resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
             print(resp)
+
             # delete the node from the database
             node = database.delete_node(node_id)
-            return {
+            '''return {
                 "node": node,
                 "msg": "Successfully deleted node."
-            }
-        except:
-            return {"Unable to delete node. Internal server error."}
+            }'''
+        except Exception as e:
+            return {f"Unable to delete node. Internal server error: {str(e)}"}
 
-    return {"Unable to delete node. The node is not in IDLE status."}
+    elif node['status'] == NodeStatus.ONLINE or node['status'] == NodeStatus.ONLINE.value:
+        # Should notify the Load Balancer that it should not redirect traffic through it anymore.
+        try:
+            # First notify the lb
+            res = requests.delete(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes/{node_id}")
+            print(res)
+
+            # Now process delete in RM and proxy
+            msg = json.dumps({
+                "cmd": "node rm",
+                "nodeName": node['name'],
+                "podName": node_pod.get('name')
+            }).encode('utf-8')
+            PROXY_SOCKET.send(msg)
+            resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
+            print(resp)
+
+            # delete the node from the database
+            node = database.delete_node(node_id)
+
+        except Exception as e:
+            return {f"Unable to delete node. Internal server error: {str(e)}"}
+
+    # Finally check if the removed node was the last node in the pod
+    if len(node_pod.get('nodes')) == 0:
+        # pause the pod
+        pass
+
+    return {'status': 200, 'message': "Successfully deleted the node"}
 
 
 ################
@@ -414,7 +454,7 @@ async def launch_job_on_pod(pod_id: str):
                     })
                     res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes/{n}", data=data, headers=headers)
                     print(res)
-                    return res
+                    return res.json()
                 except Exception as e:
                     print("An error occured in the load balancer")
                     print(str(e))

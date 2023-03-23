@@ -111,7 +111,7 @@ def processConnection(clntConnection, clntAddress, startPort):
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
                     print(f"No node named {clntData['nodeName']} to be removed")
-                    message2send = {'timestamp':datetime.now(), 'status': 400}
+                    message2send = {'timestamp':datetime.now(), 'status': 400, 'message': f"No node named {clntData['nodeName']} to be removed"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
             elif clntData['cmd'] == "job launch":
                 container = docker_client.containers.get(clntData['nodeName'])
