@@ -417,29 +417,42 @@ async def launch_job_on_pod(pod_id: str):
     # pick up the first node with NEW status in the specified pod
     for n in pod['nodes']:
         node = database.get_node(n)
+        jobType = None
+        PROXY_SOCKET = None
+
         if node["status"] == NodeStatus.NEW:
             print("Found NEW node")
             # Switch status to ONLINE 
             node["status"] = NodeStatus.ONLINE
                 
             # Start the HTTP web server on the node
-            msg = json.dumps({
-                "cmd": "job launch on pod",
-                "nodeName": node['name'],
-                "podName": pod['name']
-            }).encode('utf-8')
             try:
-                PROXY_SOCKET = None
                 if pod['name'] == 'HEAVY_POD':
                     PROXY_SOCKET = HEAVY_SOCKET
+                    jobType = "heavy"
                 elif pod['name'] == 'MEDIUM_POD':
                     PROXY_SOCKET = MEDIUM_SOCKET
+                    jobType = "medium"
                 if pod['name'] == 'LIGHT_POD':
                     PROXY_SOCKET = LIGHT_SOCKET
+                    jobType = "light"
+
+                print("Set the parameters")
+
+                msg = json.dumps({
+                    "cmd": "job launch on pod",
+                    "nodeName": node['name'],
+                    "podName": pod['name'],
+                    "type": jobType, 
+                }).encode('utf-8')
+
                 PROXY_SOCKET.send(msg)
+                print("before sending to proxy")
                 resp = json.loads(PROXY_SOCKET.recv(8192).decode('utf-8'))
-            except:
-                return {"Internal server error. Unable to launch job on the specified pod."}
+                print("after sending to proxy")
+
+            except Exception as e:
+                return {f"Internal server error. {str(e)}"}
 
             # Notify the laod balancer
             # if pod["status"] == PodStatus.PAUSED -> Do not notify the LB  because the pod is paused

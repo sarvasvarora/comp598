@@ -75,7 +75,7 @@ class MediumHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
         end_msg = f"<html><head></head><body><p><br>{message}</br></p></body></html>"
         self.wfile.write(bytes(end_msg, "utf8"))
 
-        return
+        return {'status':200, 'output': output}
 
     def medium_job(self):
         os.system('python3 ../vol2/medium.py')

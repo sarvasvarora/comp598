@@ -168,7 +168,7 @@ class Database():
     def update_node_status(self, node_id: str, node_status: NodeStatus | str) -> None:
         self.nodes[node_id]['status'] = node_status
         if node_status == NodeStatus.ONLINE or node_status.lower() == "online":
-            #self._enable_haproxy_node(node_id)
+            self._enable_haproxy_node(node_id)
             pass
         else:
             self._disable_haproxy_node(node_id)

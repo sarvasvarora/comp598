@@ -65,13 +65,14 @@ def processConnection(clntConnection, clntAddress, startPort):
                 # Create 50 docker containers as vms under the default cluster and pod
                 print("Started creating containers ...")
                 # TODO: Below is a Bad Fix. Should change it definitely
-                dir_path = f"{ROOT_DIR}/src/main/python/Resource/Webserver/"
+                webserver_path = f"{ROOT_DIR}/src/main/python/Resource/Webserver/"
+                jobs_path = f"{ROOT_DIR}/src/main/python/Resource/Jobs/"
                 #print(f"{os.path.dirname(__file__)}/Webserver")
                 for i in range(NUM_NODES):
                     d_name = f"{clntData['defaultPodName']}_node_{i}"
                     port_num = startPort + i
                     print(port_num)
-                    c = docker_client.containers.run("alpine", name=d_name, detach=True, tty=True, ports={f'{port_num}/tcp': port_num}, volumes={dir_path : {'bind': '/mnt/vol1', 'mode': 'ro'}})
+                    c = docker_client.containers.run("alpine", name=d_name, detach=True, tty=True, ports={f'{port_num}/tcp': port_num}, volumes={webserver_path : {'bind': '/mnt/vol1', 'mode': 'ro'}, jobs_path : {'bind': '/mnt/vol2', 'mode': 'ro'}})
                     c.reload()
                     idle_containers.append(c)
                 print("Successfully made all containers")
@@ -131,11 +132,21 @@ def processConnection(clntConnection, clntAddress, startPort):
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
             elif clntData['cmd'] == "job launch on pod":
                 container = docker_client.containers.get(clntData['nodeName'])
+                jobType = clntData['type']
+
                 port_str = list(container.ports.keys())[0]
                 port_num = port_str.split('/')[0]
+
                 if container:
                     # Running the server on the background
-                    Thread(target = run_server_on_container, args = (container, port_num, )).start()
+                    if jobType == "light":
+                        print("Launching a light job")
+                        Thread(target = run_light_server_on_container, args = (container, port_num, )).start()
+                    elif jobType == "medium":
+                        Thread(target = run_medium_server_on_container, args = (container, port_num, )).start()
+                    elif jobType == "heavy":
+                        Thread(target = run_heavy_server_on_container, args = (container, port_num, )).start()
+
                     message2send = {'timestamp':datetime.now(), 'status': 200, 'port': port_num, 'message':f"Server running on {clntData['nodeName']}"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
                 else:
@@ -162,13 +173,21 @@ def processConnection(clntConnection, clntAddress, startPort):
                     message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {clntData['nodeName']} to get the log"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
         except Exception as e:
+            message2send = {'timestamp':datetime.now(), 'status': 500, 'message':f"Error {str(e)}"}
+            clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
             clntConnection.close()
             cleanup()
-            print("Closed collection with client.")
+            print("Closed collection with client. Internal error: ")
             print(str(e))
             break
 
-def run_server_on_container(container, port):
+def run_light_server_on_container(container, port):
+    output = container.exec_run(f"sh -c 'apk add python3 && cd /mnt/vol1 && python3 webserver.py {port}'", stderr=True, stdout=True)
+
+def run_medium_server_on_container(container, port):
+    output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-opencv && cd /mnt/vol2 && python3 medium.py {port}'", stderr=True, stdout=True)
+
+def run_heavy_server_on_container(container, port):
     output = container.exec_run(f"sh -c 'apk add python3 && cd /mnt/vol1 && python3 webserver.py {port}'", stderr=True, stdout=True)
     #output = container.exec_run(f"sh -c 'ls'", stderr=True, stdout=True)
     print(output)
