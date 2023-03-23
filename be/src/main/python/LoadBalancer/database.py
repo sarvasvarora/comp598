@@ -178,4 +178,4 @@ class Database():
         self._delete_haproxy_node(node_id)
 
     def get_node(self, node_id: str) -> dict:
-        return self.get(node_id, None)
+        return self.nodes.get(node_id, None)
