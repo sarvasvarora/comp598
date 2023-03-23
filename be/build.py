@@ -3,7 +3,8 @@ from pybuilder.core import use_plugin, init, task
 import sys
 import os
 import uvicorn
-import typer
+from subprocess import check_output, CalledProcessError
+
 
 use_plugin("python.core")
 use_plugin("python.unittest")
@@ -43,6 +44,13 @@ def run_proxy(project):
 def run_load_balancer(project):
     sys.path.append('src/main/python')
     from LoadBalancer.env import LOAD_BALANCER_HOST, LOAD_BALANCER_PORT
+    # kill HAProxy if it's already running
+    try:
+        _ = check_output(['pgrep', 'haproxy']) is not None
+        os.system("sudo pkill haproxy")
+    except CalledProcessError:
+        pass
     # start HAProxy
+    print("Starting new HAProxy instance...")
     os.system("pgrep haproxy || sudo haproxy -f haproxy.cfg &")
     uvicorn.run('LoadBalancer.load_balancer:app', host=LOAD_BALANCER_HOST, port=LOAD_BALANCER_PORT, log_level='info', reload=True)
