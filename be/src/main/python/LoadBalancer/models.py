@@ -1,10 +1,14 @@
 from pydantic import BaseModel
+from typing import Literal
 
 
 class PodReq(BaseModel):
     name: str
     podId: str
-    status: str
+    type: Literal['heavy', 'HEAVY', 'medium', 'MEDIUM', 'light', 'LIGHT']
+
+class PodUpdateReq(BaseModel):
+    status: Literal['active', 'ACTIVE', 'inactive', 'INACTIVE']
 
 class NodeReq(BaseModel):
     name: str
@@ -13,4 +17,4 @@ class NodeReq(BaseModel):
     uri: str
 
 class NodeUpdateReq(BaseModel):
-    status: str
+    status: Literal['new', 'NEW', 'online', 'ONLINE']
