@@ -57,3 +57,26 @@ async def update_node(node_id: str, data: NodeUpdateReq):
     data = jsonable_encoder(data)
     database.update_node_status(node_id, data['status'])
     return {"Successfully updated node status."}
+
+
+########################################
+# REQUEST ENDPOINTS (FRONTEND DASHBOARD)
+########################################
+@router.get("/requests/heavy")
+def get_heavy_requests():
+    return request_monitor.get_heavy_requests()
+
+
+@router.get("/requests/medium")
+def get_medium_requests():
+    return request_monitor.get_medium_requests()
+
+
+@router.get("/requests/light")
+def get_light_requests():
+    return request_monitor.get_light_requests()
+
+
+@router.get("/requests/throughput")
+def get_throughput():
+    return request_monitor.get_throughputs()
