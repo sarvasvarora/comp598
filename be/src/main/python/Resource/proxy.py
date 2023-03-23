@@ -72,7 +72,7 @@ def processConnection(clntConnection, clntAddress, startPort):
                     d_name = f"{clntData['defaultPodName']}_node_{i}"
                     port_num = startPort + i
                     print(port_num)
-                    c = docker_client.containers.run("alpine", name=d_name, detach=True, tty=True, ports={f'{port_num}/tcp': port_num}, volumes={webserver_path : {'bind': '/mnt/vol1', 'mode': 'ro'}, jobs_path : {'bind': '/mnt/vol2', 'mode': 'ro'}})
+                    c = docker_client.containers.run("alpine", name=d_name, detach=True, tty=True, ports={f'{port_num}/tcp': port_num}, volumes={webserver_path : {'bind': '/mnt/vol1', 'mode': 'ro'}, jobs_path : {'bind': '/mnt/vol2', 'mode': 'rw'}})
                     c.reload()
                     idle_containers.append(c)
                 print("Successfully made all containers")
@@ -188,9 +188,7 @@ def run_medium_server_on_container(container, port):
     output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-opencv && cd /mnt/vol2 && python3 medium.py {port}'", stderr=True, stdout=True)
 
 def run_heavy_server_on_container(container, port):
-    output = container.exec_run(f"sh -c 'apk add python3 && cd /mnt/vol1 && python3 webserver.py {port}'", stderr=True, stdout=True)
-    #output = container.exec_run(f"sh -c 'ls'", stderr=True, stdout=True)
-    print(output)
+    output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-pillow && apk add --update --no-cache py3-pip && apk add --update --no-cache ffmpeg && pip3 install moviepy && cd /mnt/vol2 && python3 heavy.py {port}'", stderr=True, stdout=True)
 
 def findIdleContainer(pod_name):
     for c in idle_containers:
