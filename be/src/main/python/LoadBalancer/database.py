@@ -169,7 +169,6 @@ class Database():
         self.nodes[node_id]['status'] = node_status
         if node_status == NodeStatus.ONLINE or node_status.lower() == "online":
             self._enable_haproxy_node(node_id)
-            pass
         else:
             self._disable_haproxy_node(node_id)
 
