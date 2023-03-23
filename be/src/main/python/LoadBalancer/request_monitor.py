@@ -56,15 +56,17 @@ class RequestMonitor():
             job_type: Literal['heavy', 'medium', 'light'],
             client_host: str,
             request_arrival_time: datetime,
-            response_time: float | int
+            response_time: float | int,
+            response_status: str
         ):
         self.requests[job_type].append({
             "clientHost": client_host,
             "requestArrivalTime": request_arrival_time,
-            "responseTime": response_time
+            "responseTime": response_time,
+            "responseStatus": response_status
         })
         # log the request
-        self.log.write(f"job_type: {job_type} | client_host: {client_host} | request_arrival_time: {request_arrival_time} | response_time: {response_time}\n")
+        self.log.write(f"job_type: {job_type} | client_host: {client_host} | request_arrival_time: {request_arrival_time} | response_time: {response_time} | response_status: {response_status}\n")
         # compute throughput
         self._compute_throughput(job_type, response_time)
 
