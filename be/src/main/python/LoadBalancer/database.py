@@ -81,7 +81,7 @@ class Database():
                 self.light_pod_id = pod['podId']
 
     def delete_pod(self, pod_id: str) -> None:
-        node_ids = self.pods['nodes'].copy()
+        node_ids = self.pods['pod_id']['nodes'].copy()
         for node_id in node_ids:
             self.delete_node(node_id)
         self.pods.pop(pod_id)
