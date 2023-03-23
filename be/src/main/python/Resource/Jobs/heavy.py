@@ -40,6 +40,10 @@ class HeavyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         return {'status':200}
 
+    def end_headers (self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        SimpleHTTPRequestHandler.end_headers(self)
+    
     def process(self):
         video = video2chars()
         video.movie2movie('videos/example.MOV', 'videos/out.MP4')

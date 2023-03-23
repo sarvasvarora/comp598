@@ -39,6 +39,10 @@ class MediumHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
 
 		return {'status':200, 'output': output}
 
+	def end_headers (self):
+		self.send_header('Access-Control-Allow-Origin', '*')
+		SimpleHTTPRequestHandler.end_headers(self)
+
 	def zoom(self):
 
 		imgpath = "images/medium.jpg"
