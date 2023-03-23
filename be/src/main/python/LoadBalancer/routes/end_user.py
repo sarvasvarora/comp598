@@ -69,7 +69,7 @@ async def heavy(req: Request, data = Body(...)):
 # MEDIUM JOB ENDPOINT
 #####################
 @router.get("/medium")
-async def heavy_get(req: Request):
+async def medium_get(req: Request):
     req_arrival_time = datetime.now()
     client_host = req.client.host
     if database.get_medium_pod_status() == PodStatus.ACTIVE:
@@ -121,7 +121,7 @@ async def medium(req: Request, data = Body(...)):
 # LIGHT JOB ENDPOINT
 ####################
 @router.get("/light")
-async def heavy_get(req: Request):
+async def light_get(req: Request):
     req_arrival_time = datetime.now()
     client_host = req.client.host
     if database.get_light_pod_status() == PodStatus.ACTIVE:
