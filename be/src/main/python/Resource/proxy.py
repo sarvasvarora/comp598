@@ -181,7 +181,8 @@ def processConnection(clntConnection, clntAddress, startPort):
             break
 
 def run_light_server_on_container(container, port):
-    output = container.exec_run(f"sh -c 'apk add python3 && cd /mnt/vol1 && python3 light.py {port}'", stderr=True, stdout=True)
+    #output = container.exec_run(f"sh -c 'apk add python3 && cd /mnt/vol1 && python3 light.py {port}'", stderr=True, stdout=True)
+    output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-pip && pip3 install fastapi && pip3 install uvicorn && cd /mnt/vol1 && uvicorn light_fastapi:app --reload --host 0.0.0.0 --port {port}'", stderr=True, stdout=True)
 
 def run_medium_server_on_container(container, port):
     output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-opencv && cd /mnt/vol1 && python3 medium.py {port}'", stderr=True, stdout=True)
