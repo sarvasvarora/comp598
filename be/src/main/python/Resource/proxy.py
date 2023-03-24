@@ -189,7 +189,8 @@ def run_medium_server_on_container(container, port):
     output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-opencv && apk add --update --no-cache py3-pip && pip3 install fastapi && pip3 install uvicorn && cd /mnt/vol1 && uvicorn medium_fastapi:app --reload --host 0.0.0.0 --port {port}'", stderr=True, stdout=True)
 
 def run_heavy_server_on_container(container, port):
-    output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-pillow && apk add --update --no-cache py3-pip && apk add --update --no-cache ffmpeg && pip3 install moviepy && cd /mnt/vol1 && python3 heavy.py {port}'", stderr=True, stdout=True)
+    #output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-pillow && apk add --update --no-cache py3-pip && apk add --update --no-cache ffmpeg && pip3 install moviepy && cd /mnt/vol1 && python3 heavy.py {port}'", stderr=True, stdout=True)
+    output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-pillow && apk add --update --no-cache py3-pip && apk add --update --no-cache ffmpeg && pip3 install moviep && pip3 install fastapi && pip3 install uvicorn && cd /mnt/vol1 && uvicorn heavy_fastapi:app --reload --host 0.0.0.0 --port {port}'", stderr=True, stdout=True)
 
 def findIdleContainer(pod_name):
     for c in idle_containers:
