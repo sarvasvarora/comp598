@@ -139,11 +139,24 @@ def processConnection(clntConnection, clntAddress, startPort):
                 if container:
                     # Running the server on the background
                     if jobType == "light":
-                        print("Launching a light job")
+                        # Set up dependencies 
+                        container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-pip'", stderr=True, stdout=True)
+                        container.exec_run(f"sh -c 'pip3 install fastapi && pip3 install uvicorn'", stderr=True, stdout=True)
+                        
                         Thread(target = run_light_server_on_container, args = (container, port_num, )).start()
                     elif jobType == "medium":
+                        # Set up dependencies
+                        container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy'", stderr=True, stdout=True)
+                        container.exec_run(f"sh -c 'apk add --update --no-cache py3-opencv '", stderr=True, stdout=True)
+                        container.exec_run(f"sh -c 'apk add --update --no-cache py3-pip && pip3 install fastapi && pip3 install uvicorn'", stderr=True, stdout=True)
+                        
                         Thread(target = run_medium_server_on_container, args = (container, port_num, )).start()
                     elif jobType == "heavy":
+                        # Set up dependencies
+                        container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-pillow'", stderr=True, stdout=True)
+                        container.exec_run(f"sh -c 'apk add --update --no-cache py3-pip && apk add --update --no-cache ffmpeg'", stderr=True, stdout=True)
+                        container.exec_run(f"sh -c 'pip3 install moviepy && pip3 install fastapi && pip3 install uvicorn'", stderr=True, stdout=True)
+                        
                         Thread(target = run_heavy_server_on_container, args = (container, port_num, )).start()
 
                     message2send = {'timestamp':datetime.now(), 'status': 200, 'port': port_num, 'message':f"Server running on {clntData['nodeName']}"}
@@ -181,16 +194,13 @@ def processConnection(clntConnection, clntAddress, startPort):
             break
 
 def run_light_server_on_container(container, port):
-    #output = container.exec_run(f"sh -c 'apk add python3 && cd /mnt/vol1 && python3 light.py {port}'", stderr=True, stdout=True)
-    output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-pip && pip3 install fastapi && pip3 install uvicorn && cd /mnt/vol1 && uvicorn light_fastapi:app --reload --host 0.0.0.0 --port {port}'", stderr=True, stdout=True)
+    output = container.exec_run(f"sh -c 'cd /mnt/vol1 && uvicorn light_fastapi:app --reload --host 0.0.0.0 --port {port}'", stderr=True, stdout=True)
 
 def run_medium_server_on_container(container, port):
-    #output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-opencv && cd /mnt/vol1 && python3 medium.py {port}'", stderr=True, stdout=True)
-    output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-opencv && apk add --update --no-cache py3-pip && pip3 install fastapi && pip3 install uvicorn && cd /mnt/vol1 && uvicorn medium_fastapi:app --reload --host 0.0.0.0 --port {port}'", stderr=True, stdout=True)
+    output = container.exec_run(f"sh -c 'cd /mnt/vol1 && uvicorn medium_fastapi:app --reload --host 0.0.0.0 --port {port}'", stderr=True, stdout=True)
 
 def run_heavy_server_on_container(container, port):
-    #output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-pillow && apk add --update --no-cache py3-pip && apk add --update --no-cache ffmpeg && pip3 install moviepy && cd /mnt/vol1 && python3 heavy.py {port}'", stderr=True, stdout=True)
-    output = container.exec_run(f"sh -c 'apk add python3 && apk add --update --no-cache py3-numpy && apk add --update --no-cache py3-pillow && apk add --update --no-cache py3-pip && apk add --update --no-cache ffmpeg && pip3 install moviepy && pip3 install fastapi && pip3 install uvicorn && cd /mnt/vol1 && uvicorn heavy_fastapi:app --reload --host 0.0.0.0 --port {port}'", stderr=True, stdout=True)
+    output = container.exec_run(f"sh -c 'cd /mnt/vol1 && uvicorn heavy_fastapi:app --reload --host 0.0.0.0 --port {port}'", stderr=True, stdout=True)
 
 def findIdleContainer(pod_name):
     for c in idle_containers:
