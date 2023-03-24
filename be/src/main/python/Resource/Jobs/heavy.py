@@ -12,9 +12,9 @@ class HeavyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         # Sending an '200 OK' response
         self.send_response(200)
-
         # Setting the header
         self.send_header("Content-type", "text/html")
+        self.send_header("Access-Control-Allow-Origin", "*")
 
         # Whenever using 'send_header', you also have to call 'end_headers'
         self.end_headers()
@@ -42,7 +42,11 @@ class HeavyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def end_headers (self):
         self.send_header('Access-Control-Allow-Origin', '*')
-        SimpleHTTPRequestHandler.end_headers(self)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET')
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+        return super(HeavyHttpRequestHandler, self).end_headers()
+        # SimpleHTTPRequestHandler.end_headers(self)
     
     def process(self):
         video = video2chars()
