@@ -121,6 +121,12 @@ async def init():
                         "type": "heavy"
                     })
                     res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pods", data=data, headers=headers)
+
+                    # make pod active 
+                    data = json.dumps({
+                        "status": "active",
+                    })
+                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pods/{pod_id}", data=data, headers=headers)
                 except Exception as e:
                     print(str(e))
             elif SOCKET ==  MEDIUM_SOCKET:
@@ -131,6 +137,12 @@ async def init():
                         "type": "medium"
                     })
                     res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pods", data=data, headers=headers)
+
+                    # make pod active 
+                    data = json.dumps({
+                        "status": "active",
+                    })
+                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pods/{pod_id}", data=data, headers=headers)
                 except Exception as e:
                     print(str(e))
             elif SOCKET == LIGHT_SOCKET:
@@ -141,6 +153,12 @@ async def init():
                         "type": "light"
                     })
                     res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pods", data=data, headers=headers)
+
+                    # make pod active 
+                    data = json.dumps({
+                        "status": "active",
+                    })
+                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/pods/{pod_id}", data=data, headers=headers)
                 except Exception as e:
                     print(str(e))
 
