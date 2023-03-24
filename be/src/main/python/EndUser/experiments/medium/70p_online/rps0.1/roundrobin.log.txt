@@ -1,0 +1,53 @@
+job_type: PodType.HEAVY | pod_status: PodStatus.ACTIVE
+job_type: PodType.MEDIUM | pod_status: PodStatus.ACTIVE
+job_type: PodType.LIGHT | pod_status: PodStatus.ACTIVE
+job_type: PodType.MEDIUM | num_nodes: 1
+job_type: PodType.MEDIUM | num_nodes: 2
+job_type: PodType.MEDIUM | num_nodes: 3
+job_type: PodType.MEDIUM | num_nodes: 4
+job_type: PodType.MEDIUM | num_nodes: 5
+job_type: PodType.MEDIUM | num_nodes: 6
+job_type: PodType.MEDIUM | num_nodes: 7
+job_type: PodType.MEDIUM | num_nodes: 8
+job_type: PodType.MEDIUM | num_nodes: 9
+job_type: PodType.MEDIUM | num_nodes: 10
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:57:32.278722 | response_time: 15.261601
+job_type: medium | throughput: 0.06552392504560957 | total_requests: 1 | total_response_time: 15.261601
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:57:42.279656 | response_time: 21.374432
+job_type: medium | throughput: 0.04678486894996789 | total_requests: 1 | total_response_time: 21.374432
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:57:52.277802 | response_time: 28.497424
+job_type: medium | throughput: 0.035090891022290294 | total_requests: 1 | total_response_time: 28.497424
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:58:02.278169 | response_time: 33.884515
+job_type: medium | throughput: 0.029512005705260944 | total_requests: 1 | total_response_time: 33.884515
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:58:12.277900 | response_time: 41.119783
+job_type: medium | throughput: 0.024319194486021486 | total_requests: 1 | total_response_time: 41.119783
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:58:22.277781 | response_time: 46.871615
+job_type: medium | throughput: 0.02133487399570081 | total_requests: 1 | total_response_time: 46.871615
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:58:32.277784 | response_time: 50.003265
+job_type: medium | throughput: 0.01999869408527623 | total_requests: 1 | total_response_time: 50.003265
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:58:42.277709 | response_time: 50.00336
+job_type: medium | throughput: 0.01999865609031073 | total_requests: 1 | total_response_time: 50.00336
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:58:52.278024 | response_time: 50.004801
+job_type: medium | throughput: 0.019998079784379105 | total_requests: 1 | total_response_time: 50.004801
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:59:02.277825 | response_time: 50.004558
+job_type: medium | throughput: 0.01999817696618776 | total_requests: 1 | total_response_time: 50.004558
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:59:12.277758 | response_time: 50.002736
+job_type: medium | throughput: 0.019998905659882292 | total_requests: 1 | total_response_time: 50.002736
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:59:22.278109 | response_time: 50.004541
+job_type: medium | throughput: 0.019998183764950467 | total_requests: 1 | total_response_time: 50.004541
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:59:32.277877 | response_time: 50.003273
+job_type: medium | throughput: 0.01999869088569462 | total_requests: 1 | total_response_time: 50.003273
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:59:42.277784 | response_time: 50.002403
+job_type: medium | throughput: 0.01999903884619305 | total_requests: 1 | total_response_time: 50.002403
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 14:59:52.277757 | response_time: 50.007033
+job_type: medium | throughput: 0.01999718719564906 | total_requests: 1 | total_response_time: 50.007033
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 15:00:02.277796 | response_time: 50.006058
+job_type: medium | throughput: 0.019997577093559343 | total_requests: 1 | total_response_time: 50.006058
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 15:00:12.277698 | response_time: 50.009006
+job_type: medium | throughput: 0.019996398248747434 | total_requests: 1 | total_response_time: 50.009006
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 15:00:22.277778 | response_time: 50.012853
+job_type: medium | throughput: 0.01999486012125723 | total_requests: 1 | total_response_time: 50.012853
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 15:00:32.277740 | response_time: 50.012817
+job_type: medium | throughput: 0.019994874513867115 | total_requests: 1 | total_response_time: 50.012817
+job_type: medium | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 15:00:42.277734 | response_time: 50.014062
+job_type: medium | throughput: 0.019994376781473977 | total_requests: 1 | total_response_time: 50.014062
