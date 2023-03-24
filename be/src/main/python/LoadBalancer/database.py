@@ -101,12 +101,12 @@ class Database():
         if pod:
             return pod['status']
 
-    def get_medium_pod(self) -> PodStatus:
+    def get_medium_pod_status(self) -> PodStatus:
         pod = self.get_pod(self.medium_pod_id)
         if pod:
             return pod['status']
 
-    def get_light_pod(self) -> PodStatus:
+    def get_light_pod_status(self) -> PodStatus:
         pod = self.get_pod(self.light_pod_id)
         if pod:
             return pod['status']

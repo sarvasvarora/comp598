@@ -14,3 +14,16 @@ export LIGHT_PORT=9002
 
 export FRONTEND_HOST=localhost
 export FRONTEND_PORT=3000
+
+export LOAD_BALANCER_HOST=localhost
+export LOAD_BALANCER_PORT=7000
+
+# HAPROXY env variables
+export HAPROXY_SOCKET_ADDRESS="/run/haproxy/haproxy.sock"
+export HAPROXY_HEAVY_BACKEND_NAME="heavy_backend"
+export HAPROXY_MEDIUM_BACKEND_NAME="medium_backend"
+export HAPROXY_LIGHT_BACKEND_NAME="light_backend"
+export HAPROXY_FRONTEND_PORT=6666
+
+# Request monitor env variables
+export REQUEST_MONITOR_LOG_FILENAME="./req_monitor.log.txt"
