@@ -26,4 +26,5 @@ app.add_middleware(
 ###############
 @app.get("/")
 async def root():
+    time.sleep(0.1)
     return {"Hello, World!"}
