@@ -1,0 +1,28 @@
+job_type: PodType.HEAVY | pod_status: PodStatus.ACTIVE
+job_type: PodType.MEDIUM | pod_status: PodStatus.ACTIVE
+job_type: PodType.LIGHT | pod_status: PodStatus.ACTIVE
+job_type: PodType.HEAVY | num_nodes: 1
+job_type: PodType.HEAVY | num_nodes: 2
+job_type: PodType.HEAVY | num_nodes: 3
+job_type: PodType.HEAVY | num_nodes: 4
+job_type: PodType.HEAVY | num_nodes: 5
+job_type: heavy | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 21:55:55.346253 | response_time: 76.035801
+job_type: heavy | throughput: 0.013151699421171349 | total_requests: 1 | total_response_time: 76.035801
+job_type: heavy | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 21:56:55.347583 | response_time: 138.970366
+job_type: heavy | throughput: 0.007195778702921455 | total_requests: 1 | total_response_time: 138.970366
+job_type: heavy | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 21:56:25.343661 | response_time: 184.94299
+job_type: heavy | throughput: 0.005407071660299209 | total_requests: 1 | total_response_time: 184.94299
+job_type: heavy | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 21:57:25.351234 | response_time: 247.795509
+job_type: heavy | throughput: 0.004035585648971548 | total_requests: 1 | total_response_time: 247.795509
+job_type: heavy | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 21:58:25.345094 | response_time: 203.657566
+job_type: heavy | throughput: 0.004910203041511357 | total_requests: 1 | total_response_time: 203.657566
+job_type: heavy | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 21:57:55.346985 | response_time: 357.306504
+job_type: heavy | throughput: 0.0027987175962517602 | total_requests: 1 | total_response_time: 357.306504
+job_type: heavy | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 21:58:55.349038 | response_time: 312.221294
+job_type: heavy | throughput: 0.003202856497033159 | total_requests: 1 | total_response_time: 312.221294
+job_type: heavy | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 21:59:25.351309 | response_time: 405.363184
+job_type: heavy | throughput: 0.0024669235872195046 | total_requests: 1 | total_response_time: 405.363184
+job_type: heavy | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 21:59:55.355041 | response_time: 389.701092
+job_type: heavy | throughput: 0.0025660692785536253 | total_requests: 1 | total_response_time: 389.701092
+job_type: heavy | client_host: 10.140.17.114 | request_arrival_time: 2023-03-24 22:00:25.355268 | response_time: 483.647678
+job_type: heavy | throughput: 0.002067620802265074 | total_requests: 1 | total_response_time: 483.647678
