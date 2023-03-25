@@ -27,14 +27,17 @@ async def heavy_get(req: Request):
             job_type='heavy',
             client_host=client_host,
             request_arrival_time=req_arrival_time,
-            response_time=time_elapsed)
+            response_time=time_elapsed,
+            response_status=str(res.status_code)
+        )
         return StreamingResponse(res)  
     else:
         request_monitor.log_request(
             job_type='heavy',
             client_host=client_host,
             request_arrival_time=req_arrival_time,
-            response_time=0.
+            response_time=0.,
+            response_status='pod_inactive'
         )
         return {"Pod inactive: couldn't execute request."}
 
@@ -53,14 +56,17 @@ async def heavy(req: Request, data = Body(...)):
             job_type='heavy',
             client_host=client_host,
             request_arrival_time=req_arrival_time,
-            response_time=time_elapsed)
+            response_time=time_elapsed,
+            response_status=str(res.status_code)
+        )
         return StreamingResponse(res)
     else:
         request_monitor.log_request(
             job_type='heavy',
             client_host=client_host,
             request_arrival_time=req_arrival_time,
-            response_time=0.
+            response_time=0.,
+            response_status='pod_inactive'
         )
         return {"Pod inactive: couldn't execute request."}
 
@@ -69,7 +75,7 @@ async def heavy(req: Request, data = Body(...)):
 # MEDIUM JOB ENDPOINT
 #####################
 @router.get("/medium")
-async def medium_get(req: Request):
+async def heavy_get(req: Request):
     req_arrival_time = datetime.now()
     client_host = req.client.host
     if database.get_medium_pod_status() == PodStatus.ACTIVE:
@@ -80,14 +86,17 @@ async def medium_get(req: Request):
             job_type='medium',
             client_host=client_host,
             request_arrival_time=req_arrival_time,
-            response_time=time_elapsed)
+            response_time=time_elapsed,
+            response_status=str(res.status_code)
+        )
         return StreamingResponse(res)
     else:
         request_monitor.log_request(
             job_type='medium',
             client_host=client_host,
             request_arrival_time=req_arrival_time,
-            response_time=0.
+            response_time=0.,
+            response_status='pod_inactive'
         )
         return {"Pod inactive: couldn't execute request."}
 
@@ -105,14 +114,17 @@ async def medium(req: Request, data = Body(...)):
             job_type='medium',
             client_host=client_host,
             request_arrival_time=req_arrival_time,
-            response_time=time_elapsed)
+            response_time=time_elapsed,
+            response_status=str(res.status_code)
+        )
         return StreamingResponse(res)
     else:
         request_monitor.log_request(
             job_type='medium',
             client_host=client_host,
             request_arrival_time=req_arrival_time,
-            response_time=0.
+            response_time=0.,
+            response_status='pod_inactive'
         )
         return {"Pod inactive: couldn't execute request."}
 
@@ -121,7 +133,7 @@ async def medium(req: Request, data = Body(...)):
 # LIGHT JOB ENDPOINT
 ####################
 @router.get("/light")
-async def light_get(req: Request):
+async def heavy_get(req: Request):
     req_arrival_time = datetime.now()
     client_host = req.client.host
     if database.get_light_pod_status() == PodStatus.ACTIVE:
@@ -132,14 +144,17 @@ async def light_get(req: Request):
             job_type='light',
             client_host=client_host,
             request_arrival_time=req_arrival_time,
-            response_time=time_elapsed)
+            response_time=time_elapsed,
+            response_status=str(res.status_code)
+        )
         return StreamingResponse(res)
     else:
         request_monitor.log_request(
             job_type='light',
             client_host=client_host,
             request_arrival_time=req_arrival_time,
-            response_time=0.
+            response_time=0.,
+            response_status='pod_inactive'
         )
         return {"Pod inactive: couldn't execute request."}
 
@@ -157,13 +172,16 @@ async def light(req: Request, data = Body(...)):
             job_type='light',
             client_host=client_host,
             request_arrival_time=req_arrival_time,
-            response_time=time_elapsed)
+            response_time=time_elapsed,
+            response_status=str(res.status_code)
+        )
         return StreamingResponse(res)
     else:
         request_monitor.log_request(
             job_type='light',
             client_host=client_host,
             request_arrival_time=req_arrival_time,
-            response_time=0.
+            response_time=0.,
+            response_status='pod_inactive'
         )
         return {"Pod inactive: couldn't execute request."}

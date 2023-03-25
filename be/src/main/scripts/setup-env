@@ -19,7 +19,7 @@ export LOAD_BALANCER_HOST=localhost
 export LOAD_BALANCER_PORT=7000
 
 # HAPROXY env variables
-export HAPROXY_SOCKET_ADDRESS="/run/haproxy/haproxy.sock"
+export HAPROXY_SOCKET_ADDRESS="/Users/aidan/run/haproxy/haproxy.sock"
 export HAPROXY_HEAVY_BACKEND_NAME="heavy_backend"
 export HAPROXY_MEDIUM_BACKEND_NAME="medium_backend"
 export HAPROXY_LIGHT_BACKEND_NAME="light_backend"
