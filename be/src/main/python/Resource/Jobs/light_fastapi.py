@@ -1,3 +1,4 @@
+import time
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
@@ -26,4 +27,5 @@ app.add_middleware(
 ###############
 @app.get("/")
 async def root():
+    time.sleep(0.1)
     return {"Hello, World!"}
