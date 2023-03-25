@@ -49,7 +49,6 @@ const NodeList = ({ props }) => {
       </div>
     )
   }
-  // console.log(renderPod("pod_0"))
 
   const renderPods = () => {
     var res = []

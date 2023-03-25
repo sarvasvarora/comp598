@@ -1,6 +1,0 @@
-job_type: PodType.HEAVY | pod_status: PodStatus.ACTIVE
-job_type: PodType.MEDIUM | pod_status: PodStatus.ACTIVE
-job_type: PodType.LIGHT | pod_status: PodStatus.ACTIVE
-job_type: PodType.LIGHT | num_nodes: 1
-job_type: PodType.LIGHT | num_nodes: 2
-job_type: PodType.LIGHT | num_nodes: 3
