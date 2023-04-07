@@ -26,7 +26,6 @@ def set_properties(project):
     project.depends_on("python-multipart")
     project.depends_on("docker")
     project.depends_on("requests-async")
-    project.depends_on("pycurl")
 
 @task
 def run_resource_manager(project):

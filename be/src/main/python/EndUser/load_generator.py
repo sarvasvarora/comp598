@@ -1,4 +1,3 @@
-import pycurl
 import certifi
 from io import BytesIO 
 import sys, os
@@ -6,13 +5,15 @@ import socket
 import time
 import threading
 from statistics import mean
+import requests
+import json
 
 class RepeatedTimer(object):
   def __init__(self, interval, limit, function, *args, **kwargs):
     self._timer = None
     self.interval = interval
     self.function = function
-    self.limit = limit + interval
+    self.limit = limit + 3
     self.counter = 0
     self.latencies = []
     self.args = args
@@ -43,48 +44,29 @@ class RepeatedTimer(object):
     self._timer.cancel()
     self.is_running = False
 
-LOAD_BALANCER_HOST = socket.gethostbyname(os.environ.get('LOAD_BALANCER_HOST')) if os.environ.get('LOAD_BALANCER_HOST') is not None else socket.gethostbyname("localhost")
-LOAD_BALANCER_PORT = int(os.environ.get('LOAD_BALANCER_PORT')) if os.environ.get('LOAD_BALANCER_PORT') is not None else 7000
+LOAD_BALANCER_HOST = "10.140.17.115"
+LOAD_BALANCER_PORT = 7000
 
 def main():
     # Every freq there will be a new req
     freq = sys.argv[1] 
-    duration = sys.argv[2]
+    numReq = sys.argv[2]
     # Type of the job to invoke
     jobType = sys.argv[3]
 
-    r  = RepeatedTimer(int(freq), int(duration)//int(freq) , makeReq, jobType)
+    r  = RepeatedTimer(float(freq), int(numReq) , makeReq, jobType)
     r.start()
 
 def makeReq(jobType):
-    c = pycurl.Curl()
-
-    ## Define Options - Set URL we want to request
-    c.setopt(c.URL, f'{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/api/{type}')
-    #c.setopt(c.URL, f'{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}')
-
-    ## Setup buffer to recieve response
-    buffer = BytesIO()
-    c.setopt(c.WRITEDATA, buffer)
-
-    ## Setup SSL certificates
-    c.setopt(c.CAINFO, certifi.where())
-
-    ## Make Requests
     start = time.time()
-    c.perform()
+    res = requests.get(f'http://10.140.17.115:7000/api/{jobType}')
+    print(res.json())
     duration = time.time() - start
 
-    ## Close Connection
-    c.close()
-
-    ## Retrieve the content BytesIO & Decode
-    body = buffer.getvalue()
-    print(body.decode('iso-8859-1'))
     return duration
 
 
-# Call example: python3 load_generator.py [rps] [duration] [jobType]
-# For instance python3 load_generator.py 2 10 light -> Sends 5 requests to the loadbalancer/light every 2 seconds
+# Call example: python3 load_generator.py [rps] [numReq] [jobType]
+# For instance python3 load_generator.py 2 10 light -> Sends 10 requests to the loadbalancer/light every 2 seconds
 if __name__ == '__main__':
     main()
