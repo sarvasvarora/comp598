@@ -21,7 +21,11 @@ Pod = {
     "clusterId": str
     "nodes": List[str],
     "status": PodStatus/str,
-    "nodeLimit: int
+    "nodeLimit": int,
+    "cpuLowerLimit": float,
+    "cpuUpperLimit": float,
+    "memoryLowerLimit": float,
+    "memoryUpperLimit": float
 }
 
 
@@ -103,13 +107,18 @@ class Database():
             return
         # generate pod ID
         id = self.pod_id_generator.generate_id()
-        # create required data object
+        # create required data object 
+        # At first the cpu/mem thresholds are set to default values until the user change them manually
         data = {
             "name": pod['name'],
             "clusterId": pod['clusterId'],
             "nodes": [],
             "status": pod['status'],
-            "nodeLimit": pod['nodeLimit']
+            "nodeLimit": pod['nodeLimit'],
+            "cpuLowerLimit": 0.0,
+            "cpuUpperLimit": 99.9,
+            "memoryLowerLimit": 0.0,
+            "memoryUpperLimit": 99.9
         }
         # append the pod ID to the associated cluster record
         self.clusters[pod['clusterId']]['pods'].append(id)
@@ -135,6 +144,26 @@ class Database():
         except KeyError:
             return None
 
+    def update_pod_lower_limit(self, pod_id: str, cpu_lower: float, mem_lower: float):
+        pod = self.pods.get(pod_id, None)
+
+        if pod:
+            pod['cpuLowerLimit'] = cpu_lower
+            pod['memoryLowerLimit'] = mem_lower
+            return self.pods[pod_id]
+        else:
+            return None
+
+    def update_pod_upper_limit(self, pod_id: str, cpu_upper: float, mem_upper: float):
+        pod = self.pods.get(pod_id, None)
+
+        if pod:
+            pod['cpuUpperLimit'] = cpu_upper
+            pod['memoryUpperLimit'] = mem_upper
+            return self.pods[pod_id]
+        else:
+            return None
+            
 
     ###############
     # NODE METHODS

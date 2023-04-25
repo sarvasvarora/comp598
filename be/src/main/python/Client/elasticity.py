@@ -15,7 +15,7 @@ def lower_threshold(pod_id: str = Argument(..., help='Pod_id to set the utilizat
     """
     Sets a lower threshold on the cpu and memory utilization of the nodes in the specified pod. 
     """
-    res = requests.get(f"http://{API_HOST}:{API_PORT}/elasticity/lower/{pod_id}/{value}")
+    res = requests.post(f"http://{API_HOST}:{API_PORT}/elasticity/lower/{pod_id}/{value}")
     try:
         print_json(data=res.json())
     except JSONDecodeError:
@@ -26,7 +26,7 @@ def upper_threshold(pod_id: str = Argument(..., help='Pod_id to set the utilizat
     """
     Sets a lower threshold on the cpu and memory utilization of the nodes in the specified pod. 
     """
-    res = requests.get(f"http://{API_HOST}:{API_PORT}/elasticity/upper/{pod_id}/{value}")
+    res = requests.post(f"http://{API_HOST}:{API_PORT}/elasticity/upper/{pod_id}/{value}")
     try:
         print_json(data=res.json())
     except JSONDecodeError:

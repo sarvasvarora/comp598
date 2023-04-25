@@ -402,6 +402,29 @@ async def delete_node(node_id: str):
 
     return {'status': 200, 'message': "Successfully deleted the node"}
 
+@app.get("/nodes/stats/{node_id}")
+async def read_node_stats(node_id: str):
+    # Should do it for all nodes in each pod 
+    if node_id is not None:
+        # send msg to proxy to create node in the backend
+        try:
+            print("here")
+            msg = json.dumps({
+                "cmd": "node stats",
+                "nodeName": database.get_node(node_id).get('name'),
+                "podName": database.get_pod(database.get_node(node_id).get('podId')).get('name')
+            }).encode('utf-8')
+            print("here")
+            LIGHT_SOCKET.send(msg)
+            print("here2")
+            resp = json.loads(LIGHT_SOCKET.recv(8192).decode('utf-8'))
+            print(resp)
+            
+        except Exception as e:
+            return {f"An internal error occured while reading the node stats. {str(e)}"}
+
+    return {"Error. Node_id is not valid for reading the stats."}
+
 
 ################
 # JOB ENDPOINTS
@@ -604,3 +627,41 @@ def get_node_logs(node_id: str):
             }
         except:
             return {"Internal server error. Unable to fetch logs for the specified node."}
+
+
+#######################
+# ELASTICITY ENDPOINTS
+#######################
+
+@app.post("/elasticity/lower/{pod_id}/{value}")
+async def set_lower_threshold(pod_id: str, value: str):
+    # First verify the given pod_id
+    pod = database.get_pod(pod_id)
+    if not pod:
+        return {f"Error. The specified pod with podId: {pod_id} doesn't exist."}
+    
+    try:
+        value_dict = json.loads(value)
+        updated_pod = database.update_pod_lower_limit(pod_id, value_dict['cpu'], value_dict['memory'])
+
+        return {'message': 200, 'updated_pod': updated_pod}
+
+    except Exception as e:
+        return {'message': 500, 'Error': str(e)}
+
+@app.post("/elasticity/upper/{pod_id}/{value}")
+async def set_upper_threshold(pod_id: str, value: str):
+    # First verify the given pod_id
+    pod = database.get_pod(pod_id)
+    if not pod:
+        return {f"Error. The specified pod with podId: {pod_id} doesn't exist."}
+    
+    try:
+        value_dict = json.loads(value)
+        updated_pod = database.update_pod_upper_limit(pod_id, value_dict['cpu'], value_dict['memory'])
+
+        return {'message': 200, 'updated_pod': updated_pod}
+
+    except Exception as e:
+        return {'message': 500, 'Error': str(e)}
+
