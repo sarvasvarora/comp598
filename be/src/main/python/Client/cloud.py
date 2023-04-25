@@ -9,6 +9,7 @@ from .cluster import app as cluster_app
 from .pod import app as pod_app
 from .node import app as node_app
 from .job import app as job_app
+from .elasticity import app as elasticity_app
 from .env import *
 
 
@@ -20,6 +21,7 @@ app.add_typer(cluster_app, name='cluster', help='Command group to interact with 
 app.add_typer(pod_app, name='pod', help='Command group to interact with pods.')
 app.add_typer(node_app, name='node', help='Command group to interact with nodes.')
 app.add_typer(job_app, name='job', help='Command group to interact with jobs.')
+app.add_typer(elasticity_app, name='elasticity', help='Command group to interact with elasticity settings of pods.')
 
 
 @app.command()
