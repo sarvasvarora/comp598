@@ -180,6 +180,15 @@ class Database():
             return self.pods[pod_id]
         else:
             return None
+
+    def disable_pod_elasticity(self, pod_id):
+        pod = self.pods.get(pod_id, None)
+
+        if pod:
+            pod['elasticityEnabled'] = False
+            return self.pods[pod_id]
+        else:
+            return None
             
 
     ###############

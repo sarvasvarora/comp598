@@ -9,6 +9,7 @@ from .models import *
 from .status import *
 from .env import *
 from .job_runner import *
+from .elasticity_manager import *
 import requests
 
 # create new sockets for each type of proxy
@@ -46,6 +47,9 @@ DEFAULT_POD_ID = None
 # cloud init check
 CLOUD_INIT = False
 
+# Store for pods' Elasticity Timers in case we want to start/stop them multiple times
+# Key -> pod_id     value -> RT Object
+ELASTICITY_TIMERS = {}
 
 ################
 # ROOT ENDPOINT
@@ -671,12 +675,39 @@ async def enable_elasticity(podRange: PodElasticityRange):
     rangeInfo = jsonable_encoder(podRange)
 
     # First verify the given pod_id
-    pod = database.get_pod(rangeInfo['podId'])
+    pod_id = rangeInfo['podId']
+    pod = database.get_pod(pod_id)
+
     if not pod:
-        return {f"Error. The specified pod with podId: {pod_id} doesn't exist."}
+        return {f"Error. The specified pod with podId doesn't exist."}
     
     try:
-        updated_pod = database.enable_pod_elasticity(rangeInfo['podId'], rangeInfo['lower_size'], rangeInfo['upper_size'])
+        updated_pod = database.enable_pod_elasticity(pod_id, rangeInfo['lower_size'], rangeInfo['upper_size'])
+
+        # Calling 'monitor_pod_elasticity' every 2 seconds
+        elasticity_timer = RepeatedTimer(2, monitor_pod_elasticity, pod_id, database, LIGHT_SOCKET)
+        ELASTICITY_TIMERS[pod_id] = elasticity_timer
+        ELASTICITY_TIMERS[pod_id].start()
+
+        return {'message': 200, 'updated_pod': updated_pod}
+
+    except Exception as e:
+        return {'message': 500, 'Error': str(e)}
+
+@app.get("/elasticity/disable/{pod_id}")
+async def disable_elasticity(pod_id: str):
+
+    # First verify the given pod_id
+    pod = database.get_pod(pod_id)
+    if not pod:
+        return {f"Error. The specified pod with podId doesn't exist."}
+    
+    try:
+        # Get the elasticity_timer of the specified pod and stop it
+        ELASTICITY_TIMERS[pod_id].stop()
+
+        # Update database
+        updated_pod = database.disable_pod_elasticity(pod_id)
 
         return {'message': 200, 'updated_pod': updated_pod}
 
