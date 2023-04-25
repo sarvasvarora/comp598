@@ -32,5 +32,26 @@ def upper_threshold(pod_id: str = Argument(..., help='Pod_id to set the utilizat
     except JSONDecodeError:
         print(res.text)
 
+@app.command()
+def enable(pod_id: str = Argument(..., help='Pod_id to activate elasticity on.'), lower_size: str = Argument(..., help='The lower limit on the number of nodes in the pod.'), upper_size: str = Argument(..., help='The upper limit on the number of nodes in the pod.')):
+    """
+    Sets a lower threshold on the cpu and memory utilization of the nodes in the specified pod. 
+    """
+    headers = {
+        "Content-Type": "application/json",
+        "accept": "application/json"
+    }
+    data = json.dumps({
+        "podId": pod_id,
+        "lower_size": lower_size,
+        "upper_size": upper_size
+    })
+
+    res = requests.post(f"http://{API_HOST}:{API_PORT}/elasticity/enable", data=data, headers=headers)
+    try:
+        print_json(data=res.json())
+    except JSONDecodeError:
+        print(res.text)
+
 if __name__ == "__main__":
     app()

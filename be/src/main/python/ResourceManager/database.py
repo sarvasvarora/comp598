@@ -22,10 +22,13 @@ Pod = {
     "nodes": List[str],
     "status": PodStatus/str,
     "nodeLimit": int,
+    "lowerSize": int,
+    "upperSize": int,
     "cpuLowerLimit": float,
     "cpuUpperLimit": float,
     "memoryLowerLimit": float,
-    "memoryUpperLimit": float
+    "memoryUpperLimit": float,
+    "elasticityEnabled": bool
 }
 
 
@@ -118,7 +121,10 @@ class Database():
             "cpuLowerLimit": 0.0,
             "cpuUpperLimit": 99.9,
             "memoryLowerLimit": 0.0,
-            "memoryUpperLimit": 99.9
+            "memoryUpperLimit": 99.9,
+            "lowerSize": 1,
+            "upperSize": pod['nodeLimit'],
+            "elasticityEnabled": False
         }
         # append the pod ID to the associated cluster record
         self.clusters[pod['clusterId']]['pods'].append(id)
@@ -160,6 +166,17 @@ class Database():
         if pod:
             pod['cpuUpperLimit'] = cpu_upper
             pod['memoryUpperLimit'] = mem_upper
+            return self.pods[pod_id]
+        else:
+            return None
+
+    def enable_pod_elasticity(self, pod_id, lower_size, upper_size):
+        pod = self.pods.get(pod_id, None)
+
+        if pod:
+            pod['lowerSize'] = lower_size
+            pod['upperSize'] = upper_size
+            pod['elasticityEnabled'] = True
             return self.pods[pod_id]
         else:
             return None

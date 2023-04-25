@@ -665,3 +665,20 @@ async def set_upper_threshold(pod_id: str, value: str):
     except Exception as e:
         return {'message': 500, 'Error': str(e)}
 
+@app.post("/elasticity/enable")
+async def enable_elasticity(podRange: PodElasticityRange):
+
+    rangeInfo = jsonable_encoder(podRange)
+
+    # First verify the given pod_id
+    pod = database.get_pod(rangeInfo['podId'])
+    if not pod:
+        return {f"Error. The specified pod with podId: {pod_id} doesn't exist."}
+    
+    try:
+        updated_pod = database.enable_pod_elasticity(rangeInfo['podId'], rangeInfo['lower_size'], rangeInfo['upper_size'])
+
+        return {'message': 200, 'updated_pod': updated_pod}
+
+    except Exception as e:
+        return {'message': 500, 'Error': str(e)}

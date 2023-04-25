@@ -30,3 +30,8 @@ class JobReq(BaseModel):
         if isinstance(value, str):
             return cls(**json.loads(value))
         return value
+
+class PodElasticityRange(BaseModel):
+    podId: str
+    lower_size: int
+    upper_size: int
