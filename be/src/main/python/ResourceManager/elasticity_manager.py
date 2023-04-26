@@ -5,6 +5,7 @@ from .env import *
 import json
 import socket
 from random import randint
+import requests
 
 def monitor_pod_elasticity(pod_id: str, database: Database, proxy_socket: socket.socket):
     sum_cpu = 0.0
@@ -206,7 +207,7 @@ def add_node_revised(pod_id: str, proxy_socket: socket.socket, database: Databas
             # TODO: Uncomment this part
             if pod["status"] == PodStatus.RUNNING:
                 print("Notify the new ONLINE node to the LB")
-                ''''headers = {
+                headers = {
                     "Content-Type": "application/json",
                     "accept": "application/json"
                 }
@@ -218,9 +219,7 @@ def add_node_revised(pod_id: str, proxy_socket: socket.socket, database: Databas
                     print(res)
                     return res.json()
                 except Exception as e:
-                    print(f"An error occured in the load balancer: {str(e)}")'''
-                
-            return
+                    print(f"An error occured in the load balancer: {str(e)}")
 
 # Finds an ONLINE node and make it NEW 
 # NOTE It doesn't remove the whole node from the pod. The cost reduction comes from the fact thatt there won't be any load running on the node
@@ -249,14 +248,13 @@ def delete_node(pod_id: str, proxy_socket: socket.socket, database: Database):
 
                 # Should notify the Load Balancer that it should not redirect traffic through it anymore.
                 print("Notifying the load balancer")
-                # TODO: Uncomment this part
-                '''res = requests.delete(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes/{n}")
-                print(res)'''
+                res = requests.delete(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes/{n}")
+                print(res.json())
+                return
 
             except Exception as e:
+                print(f"Unable to delete node. Internal server error: {str(e)}")
                 return {f"Unable to delete node. Internal server error: {str(e)}"}
-                
-            return
 
 class RepeatedTimer(object):
     def __init__(self, interval, function, *args, **kwargs):
