@@ -184,6 +184,31 @@ def processConnection(clntConnection, clntAddress, startPort):
                     print(f"No node named {clntData['nodeName']} to get the log")
                     message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"No node named {clntData['nodeName']} to get the log"}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+            elif clntData['cmd'] == "node stats":
+                nodes = clntData['nodes']
+                num_nodes = len(nodes)
+                sum_cpu = 0.0
+                sum_mem = 0.0
+
+                # For each node, get the stats
+                for n in nodes:
+                    container = docker_client.containers.get(n)
+                    if container:
+                        stats = container.stats(stream = False)
+                        sum_cpu += calculate_cpu_percent(stats)
+                        sum_mem += calculate_mem_percent(stats)
+                    else:
+                        print(f"Error in finding the node")
+                        message2send = {'timestamp':datetime.now(), 'status': 400, 'message':f"Error finding the node {n} to read the stats"}
+                        clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+
+                # Calculate the average utilization values
+                avg_cpu = sum_cpu / num_nodes
+                avg_mem = sum_mem / num_nodes
+
+                # Send the decoded stats to the elasticity manager
+                message2send = {'cpu_percentage': avg_cpu, 'mem_percentage': avg_mem, 'timestamp': datetime.now(), 'status': 200}
+                clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
         except Exception as e:
             message2send = {'timestamp':datetime.now(), 'status': 500, 'message':f"Error {str(e)}"}
             clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
@@ -209,12 +234,30 @@ def findIdleContainer(pod_name):
     else:
         return None
 
+def calculate_cpu_percent(d):
+    # Why don't I have this in ly stats? 
+    #cpu_count = len(d["cpu_stats"]["cpu_usage"]["percpu_usage"])
+
+    online_cpus = float(d["cpu_stats"]["online_cpus"])
+    cpu_percent = 0.0
+    cpu_delta = float(d["cpu_stats"]["cpu_usage"]["total_usage"]) - \
+                float(d["precpu_stats"]["cpu_usage"]["total_usage"])
+    system_delta = float(d["cpu_stats"]["system_cpu_usage"]) - \
+                   float(d["precpu_stats"]["system_cpu_usage"])
+    if system_delta > 0.0:
+        cpu_percent = cpu_delta / system_delta * 100.0 * online_cpus
+    return cpu_percent
+
+def calculate_mem_percent(stats):
+    return (float(stats['memory_stats']['usage']) / float(stats['memory_stats']['limit']) * 100)
+
 def cleanup():
     # Run the cleanup script 
     print(subprocess.run(["cleanup"], shell=True))
 
     # Deleting the old jobs folder
     shutil.rmtree(f"{ROOT_DIR}/jobs", ignore_errors=False, onerror=None)
+
 
 if __name__ == '__main__':
     main()

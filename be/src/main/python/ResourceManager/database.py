@@ -190,6 +190,21 @@ class Database():
         else:
             return None
             
+    def get_pod_cpu_thresh(self, pod_id):
+        pod = self.pods.get(pod_id, None)
+
+        if pod:
+            return pod['cpuLowerLimit'], pod['cpuUpperLimit']
+        else:
+            return None
+
+    def get_pod_memory_thresh(self, pod_id):
+        pod = self.pods.get(pod_id, None)
+
+        if pod:
+            return pod['memoryLowerLimit'], pod['memoryUpperLimit']
+        else:
+            return None
 
     ###############
     # NODE METHODS
@@ -238,6 +253,14 @@ class Database():
             return self.nodes.pop(node_id)
         except KeyError:
             return None
+
+    def get_pod_node_names(self, pod_id:str):
+        result = []
+        for n in self.nodes:
+            node_dict = self.nodes[n]
+            if node_dict['podId'] == pod_id:
+                result.append(node_dict['name'])
+        return result
 
     #############
     # JOB METHODS

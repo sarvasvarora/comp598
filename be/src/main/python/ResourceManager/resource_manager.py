@@ -684,8 +684,18 @@ async def enable_elasticity(podRange: PodElasticityRange):
     try:
         updated_pod = database.enable_pod_elasticity(pod_id, rangeInfo['lower_size'], rangeInfo['upper_size'])
 
-        # Calling 'monitor_pod_elasticity' every 2 seconds
-        elasticity_timer = RepeatedTimer(2, monitor_pod_elasticity, pod_id, database, LIGHT_SOCKET)
+        # Elasticity Manager should be able to communicate with the proxy
+        PROXY_SOCKET = None
+        if updated_pod['name'] == 'HEAVY_POD':
+            PROXY_SOCKET = HEAVY_SOCKET
+        elif updated_pod['name'] == 'MEDIUM_POD':
+            PROXY_SOCKET = MEDIUM_SOCKET
+        elif updated_pod['name'] == 'LIGHT_POD':
+            PROXY_SOCKET = LIGHT_SOCKET
+        
+        # Calling 'monitor_pod_elasticity' every 5 seconds
+        # TODO: Configure the frequency!
+        elasticity_timer = RepeatedTimer(10, monitor_pod_elasticity, pod_id, database, PROXY_SOCKET)
         ELASTICITY_TIMERS[pod_id] = elasticity_timer
         ELASTICITY_TIMERS[pod_id].start()
 
@@ -713,3 +723,5 @@ async def disable_elasticity(pod_id: str):
 
     except Exception as e:
         return {'message': 500, 'Error': str(e)}
+
+
