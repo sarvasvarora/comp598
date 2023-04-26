@@ -283,4 +283,18 @@ class RepeatedTimer(object):
         self._timer.cancel()
         self.is_running = False
 
+
+def get_pod_elasticity(pod_id: str, database: Database, proxy_socket: socket.socket):
+        # pod = database.get_pod(pod_id)
+        pod_nodes = database.get_pod_node_names(pod_id)
+
+        msg = json.dumps({
+            "cmd": "node stats",
+            "nodes": pod_nodes
+        }).encode('utf-8')
+
+        proxy_socket.send(msg)
+        resp = json.loads(proxy_socket.recv(8192).decode('utf-8'))
+        return resp
+
     

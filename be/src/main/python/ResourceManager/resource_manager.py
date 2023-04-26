@@ -20,6 +20,7 @@ LIGHT_SOCKET = socket.socket()
 SOCKETS = [HEAVY_SOCKET, MEDIUM_SOCKET, LIGHT_SOCKET]
 SOCKET_HOST = {HEAVY_SOCKET: HEAVY_HOST, MEDIUM_SOCKET: MEDIUM_HOST, LIGHT_SOCKET: LIGHT_HOST}
 SOCKET_PORT = {HEAVY_SOCKET: HEAVY_PORT, MEDIUM_SOCKET: MEDIUM_PORT, LIGHT_SOCKET: LIGHT_PORT}
+ID_TO_SOCKET = {"pod_0": HEAVY_SOCKET, "pod_1": MEDIUM_SOCKET, "pod_2": LIGHT_SOCKET}
 
 # initialize the in-memory database
 database = Database()
@@ -638,6 +639,18 @@ def get_node_logs(node_id: str):
 #######################
 # ELASTICITY ENDPOINTS
 #######################
+
+@app.get('/elasticity/pods/{pod_id}')
+async def get_elasticity_of_pod(pod_id: str):
+    pod = database.get_pod(pod_id)
+    if not pod:
+        return {f"Error. The specified pod with podId: {pod_id} doesn't exist."}
+    try:
+        pod_info = get_pod_elasticity(pod_id, database, ID_TO_SOCKET[pod_id])
+        return {'message': 200, 'pod_info': pod_info}
+    except Exception as e:
+        return {'message': 500, 'Error': str(e)}
+
 
 @app.post("/elasticity/lower/{pod_id}/{value}")
 async def set_lower_threshold(pod_id: str, value: str):

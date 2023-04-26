@@ -203,8 +203,13 @@ def processConnection(clntConnection, clntAddress, startPort):
                         clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
 
                 # Calculate the average utilization values
-                avg_cpu = sum_cpu / num_nodes
-                avg_mem = sum_mem / num_nodes
+                avg_cpu = 0
+                avg_mem = 0
+
+                if num_nodes > 0: 
+                    avg_cpu = sum_cpu / num_nodes
+                    avg_mem = sum_mem / num_nodes
+                    
 
                 # Send the decoded stats to the elasticity manager
                 message2send = {'cpu_percentage': avg_cpu, 'mem_percentage': avg_mem, 'timestamp': datetime.now(), 'status': 200}
