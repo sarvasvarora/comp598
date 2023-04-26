@@ -14,7 +14,6 @@ def monitor_pod_elasticity(pod_id: str, database: Database, proxy_socket: socket
     try:
         pod = database.get_pod(pod_id)
         pod_nodes = database.get_pod_node_names(pod_id)
-        num_nodes = len(pod_nodes)
         msg = json.dumps({
             "cmd": "node stats",
             "nodes": pod_nodes
@@ -39,7 +38,7 @@ def monitor_pod_elasticity(pod_id: str, database: Database, proxy_socket: socket
         if cpu_avg < cpu_lower:
             print("Average CPU is less than the cpu_lower_thresh. Removing a node detected!")
 
-            # Check if a node can be added
+            # Check if a node can be deleted
             # TODO: Change here to only check for the ONLINE nodes
             if pod['lowerSize'] == num_online:
                 print(f"Cannot remove a node under the {pod_id} as there is only min number of nodes in it")
@@ -55,8 +54,7 @@ def monitor_pod_elasticity(pod_id: str, database: Database, proxy_socket: socket
             if pod['upperSize'] == num_online:
                 print(f"Cannot add a new node under the {pod_id} as there are already max number of nodes in it")
             else:
-                # add_node(pod_id, proxy_socket, database)
-                add_node_revised(pod_id, proxy_socket, database)
+                add_node(pod_id, proxy_socket, database)
             return # We don't want the mem stuff trigger another change , so return 
 
 
@@ -85,88 +83,15 @@ def monitor_pod_elasticity(pod_id: str, database: Database, proxy_socket: socket
             if pod['upperSize'] == num_online:
                 print(f"Cannot add a new node under the {pod_id} as there are already max number of nodes in it")
             else:
-                # add_node(pod_id, proxy_socket, database)
-                add_node_revised(pod_id, proxy_socket, database)
+                add_node(pod_id, proxy_socket, database)
 
     except Exception as e:
         print(f"An error occured: {str(e)}")
 
-# TODO: Should the new node status be NEW or ONLINE?
-# TODO: I guess we should immidiately call launch_job_on_pod on the pod to use the new node
-# TODO: Maybe the approach should be that an already exisiting NEW node should become ONLINE
-def add_node(pod_id: str, proxy_socket: socket.socket, database: Database):
-    # add node to the database
-    pod = database.get_pod(pod_id)
-    node = {}
-
-    # Name appended with a random 8digit number
-    name = f"elastic_extra_{randint(10**7, (10**8)-1)}"
-    node['name'] = name
-    node['podId'] = pod_id
-
-    node['status'] = NodeStatus.NEW
-
-    # Set the cpu and memory config of the node
-    Pod_Host = None
-    if pod['name'] == 'HEAVY_POD':
-        node['cpu'] = 0.8
-        node['memory'] = 500
-        Pod_Host = HEAVY_HOST
-    elif pod['name'] == 'MEDIUM_POD':
-        node['cpu'] = 0.5
-        node['memory'] = 300
-        Pod_Host = MEDIUM_HOST
-    elif pod['name'] == 'LIGHT_POD':
-        node['cpu'] = 0.3
-        node['memory'] = 100
-        Pod_Host = LIGHT_HOST
-
-    node_id = database.add_node(node)
-
-    if node_id is not None:
-        # send msg to proxy to create node in the backend
-        try:
-            msg = json.dumps({
-                "cmd": "node register",
-                "nodeName": database.get_node(node_id).get('name'),
-                "podName": pod['name']
-            }).encode('utf-8')
-            proxy_socket.send(msg)
-            resp = json.loads(proxy_socket.recv(8192).decode('utf-8'))
-            print(resp)
-
-            # Add node to the lb [with default new status]
-            # TODO: Uncomment this part
-            '''print(f"Sending this uri to the load balancer {Pod_Host}:{resp['port']}")
-            try:
-                headers = {
-                    "Content-Type": "application/json",
-                    "accept": "application/json"
-                }
-                data = json.dumps({
-                    "name": node['name'],
-                    "nodeId": node_id,
-                    "podId": node['podId'],
-                    "uri": f"{Pod_Host}:{resp['port']}",
-                })
-                res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes", data=data, headers=headers)
-                print(res)
-                return res.json()
-            except Exception as e:
-                print(str(e))
-                return {"An error occured in the load balancer."}'''
-
-            return resp
-        except Exception as e:
-            database.delete_node(node_id)
-            return {f"An Error Occured: {str(e)}"}
-
-    return {"Unable to add node. Please specify a valid pod ID."}
-
 # Among the available NEW nodes on the pod, take one and switch to ONLINE 
-# Here the assumption is nodes on a pod are all added first as NEW and then we only switch them to ONLINE if needed to serve requests.
+# If there are no NEW nodes but there is room to beaaded --> Register and then launch job on it
 # No new node will be added as NEW by elasticity manager
-def add_node_revised(pod_id: str, proxy_socket: socket.socket, database: Database):
+def add_node(pod_id: str, proxy_socket: socket.socket, database: Database):
     pod = database.get_pod(pod_id)
 
     for n in pod['nodes']:
@@ -204,7 +129,6 @@ def add_node_revised(pod_id: str, proxy_socket: socket.socket, database: Databas
 
             # Notify the laod balancer
             # if pod["status"] == PodStatus.PAUSED -> Do not notify the LB  because the pod is paused
-            # TODO: Uncomment this part
             if pod["status"] == PodStatus.RUNNING:
                 print("Notify the new ONLINE node to the LB")
                 headers = {
@@ -220,7 +144,108 @@ def add_node_revised(pod_id: str, proxy_socket: socket.socket, database: Databas
                     return
                 except Exception as e:
                     print(f"An error occured in the load balancer: {str(e)}")
-                    return
+                    return 
+
+    # If reached here means that there was no NEW node to use
+    
+    # Check if it's possible to register a new node 
+    if pod['nodeLimit'] == len(pod['nodes']):
+        print(f"Cannot add a new node under the pod as the limit of nodes is reached.")
+        return 
+    
+    # Register a new node
+    node = {}
+
+    # Name appended with a random 8digit number
+    name = f"elastic_extra_{randint(10**7, (10**8)-1)}"
+    node['name'] = name
+    node['podId'] = pod_id
+
+    node['status'] = NodeStatus.NEW
+
+    # Set the cpu and memory config of the node
+    Pod_Host = None
+    jobType = None
+    if pod['name'] == 'HEAVY_POD':
+        node['cpu'] = 0.8
+        node['memory'] = 500
+        Pod_Host = HEAVY_HOST
+        jobType = "heavy"
+    elif pod['name'] == 'MEDIUM_POD':
+        node['cpu'] = 0.5
+        node['memory'] = 300
+        Pod_Host = MEDIUM_HOST
+        jobType = "medium"
+    elif pod['name'] == 'LIGHT_POD':
+        node['cpu'] = 0.3
+        node['memory'] = 100
+        Pod_Host = LIGHT_HOST
+        jobType = "light"
+
+    node_id = database.add_node(node)
+
+    if node_id is not None:
+        # send msg to proxy to create node in the backend
+        try:
+            msg = json.dumps({
+                "cmd": "node register",
+                "nodeName": database.get_node(node_id).get('name'),
+                "podName": pod['name']
+            }).encode('utf-8')
+            proxy_socket.send(msg)
+            resp = json.loads(proxy_socket.recv(8192).decode('utf-8'))
+            print(resp)
+
+            # Add node to the lb [with default new status]
+            print(f"Sending this uri to the load balancer {Pod_Host}:{resp['port']}")
+            headers = {
+                "Content-Type": "application/json",
+                "accept": "application/json"
+            }
+            data = json.dumps({
+                "name": node['name'],
+                "nodeId": node_id,
+                "podId": node['podId'],
+                "uri": f"{Pod_Host}:{resp['port']}",
+            })
+            res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes", data=data, headers=headers)
+            print(res.json())
+
+            # Make the node ONLINE
+            node["status"] = NodeStatus.ONLINE
+                
+            # Start the HTTP web server on the node
+            msg = json.dumps({
+                "cmd": "job launch on pod",
+                "nodeName": node['name'],
+                "podName": pod['name'],
+                "type": jobType, 
+            }).encode('utf-8')
+
+            proxy_socket.send(msg)
+            resp = json.loads(proxy_socket.recv(8192).decode('utf-8'))
+            print(resp)
+
+            # Notify the laod balancer of the ONLINE node
+            if pod["status"] == PodStatus.RUNNING:
+                print("Notify the new ONLINE node to the LB")
+                headers = {
+                    "Content-Type": "application/json",
+                    "accept": "application/json"
+                }
+                data = json.dumps({
+                    "status": "online"
+                })
+                res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes/{n}", data=data, headers=headers)
+                print(res.json())
+            return
+
+        except Exception as e:
+            database.delete_node(node_id)
+            print(f"An Error Occured: {str(e)}")
+            return
+
+    return
 
 # Finds an ONLINE node and make it NEW 
 # NOTE It doesn't remove the whole node from the pod. The cost reduction comes from the fact thatt there won't be any load running on the node
