@@ -6,6 +6,7 @@ import json
 import subprocess
 import shutil
 from .env import *
+import etcd3
 
 """
 TODO DEV NOTES
@@ -24,11 +25,17 @@ docker_client = docker.from_env()
 idle_containers = []
 in_use_containers = []
 
+# etcd
+etcd = etcd3.client()
+pod_type = ""
+
 sockets = {"heavy": HEAVY_PORT, "medium": MEDIUM_PORT, "light": LIGHT_PORT}
 node_start_ports = {"heavy": 5001, "medium": 6001, "light": 7001}
 
 def main(type):
     try:
+        global pod_type
+        pod_type = type
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         print("Socket initialized")
@@ -36,12 +43,16 @@ def main(type):
         print("Socket binded successfully")
         # TODO what should be the max_connections?
         s.listen(4) # Max connections of 4
+
     except Exception as e: 
         print("Error occured while initializing the socket" + str(e))
         sys.exit(1)
 
     # Creating 'jobs' directory for storing job files if it doesn't exist
     if not os.path.exists(f"{ROOT_DIR}/jobs"): os.mkdir(f"{ROOT_DIR}/jobs", mode = 0o777)
+
+    # etcd
+    recreateAllNodes()
 
     while True:
         try:
@@ -96,6 +107,7 @@ def processConnection(clntConnection, clntAddress, startPort):
                         print('Storage update needed')
                     message2send = {'nodeName': container.name, 'nodeStatus': container.status, 'timestamp':datetime.now(), 'port':port_num, 'status': 200}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+                    etcd.put(f'/{pod_type}/{container.name}', 'empty')
                 else:
                     print(f"No node under the podname {clntData['podName']}")
                     message2send = {'timestamp':datetime.now(), 'status': 400}
@@ -109,6 +121,7 @@ def processConnection(clntConnection, clntAddress, startPort):
                     print(f"Renamed container to {container.name}")
                     message2send = {'nodeName': container.name, 'node_status': container.status, 'timestamp':datetime.now(), 'status': 200}
                     clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+                    etcd.delete(f'/{pod_type}/{container.name}')
                 else:
                     print(f"No node named {clntData['nodeName']} to be removed")
                     message2send = {'timestamp':datetime.now(), 'status': 400, 'message': f"No node named {clntData['nodeName']} to be removed"}
@@ -215,6 +228,31 @@ def cleanup():
 
     # Deleting the old jobs folder
     shutil.rmtree(f"{ROOT_DIR}/jobs", ignore_errors=False, onerror=None)
+
+################
+##### ETCD #####
+################
+
+def recreateNode(name):
+    container = findIdleContainer(pod_type)
+    if container:
+        container.rename(name)
+        container.reload()
+        port_str = list(container.ports.keys())[0]
+        port_num = port_str.split('/')[0]
+        print(f"Renamed container to {container.name}")
+        message2send = {'nodeName': container.name, 'nodeStatus': container.status, 'timestamp':datetime.now(), 'port':port_num, 'status': 200}
+        # clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+    else:
+        print(f"No node under the podname {name}")
+        message2send = {'timestamp':datetime.now(), 'status': 400}
+        # clntConnection.send(json.dumps(message2send, default=str).encode('utf-8'))
+
+def recreateAllNodes():
+    keys = list(etcd.get_prefix('/light'))
+    res = [i[0].decode() for i in keys]
+    [recreateNode(i) for i in res]
+
 
 if __name__ == '__main__':
     main()
