@@ -216,10 +216,11 @@ def add_node_revised(pod_id: str, proxy_socket: socket.socket, database: Databas
                         "status": "online"
                     })
                     res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes/{n}", data=data, headers=headers)
-                    print(res)
-                    return res.json()
+                    print(res.json())
+                    return
                 except Exception as e:
                     print(f"An error occured in the load balancer: {str(e)}")
+                    return
 
 # Finds an ONLINE node and make it NEW 
 # NOTE It doesn't remove the whole node from the pod. The cost reduction comes from the fact thatt there won't be any load running on the node
