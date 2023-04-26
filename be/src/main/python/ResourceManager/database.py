@@ -181,7 +181,7 @@ class Database():
         else:
             return None
 
-    def disable_pod_elasticity(self, pod_id):
+    def disable_pod_elasticity(self, pod_id: str):
         pod = self.pods.get(pod_id, None)
 
         if pod:
@@ -190,7 +190,7 @@ class Database():
         else:
             return None
             
-    def get_pod_cpu_thresh(self, pod_id):
+    def get_pod_cpu_thresh(self, pod_id: str):
         pod = self.pods.get(pod_id, None)
 
         if pod:
@@ -198,13 +198,25 @@ class Database():
         else:
             return None
 
-    def get_pod_memory_thresh(self, pod_id):
+    def get_pod_memory_thresh(self, pod_id: str):
         pod = self.pods.get(pod_id, None)
 
         if pod:
             return pod['memoryLowerLimit'], pod['memoryUpperLimit']
         else:
             return None
+
+    def get_pod_num_online_node(self, pod_id: str):
+        pod = self.pods.get(pod_id, None)
+        res = 0
+        if pod:
+            for n in pod['nodes']:
+                node = self.nodes.get(n, None)
+                if node['status'] == NodeStatus.ONLINE or node['status'] == NodeStatus.ONLINE.value:
+                    res += 1
+            return res
+        else:
+            return 0
 
     ###############
     # NODE METHODS

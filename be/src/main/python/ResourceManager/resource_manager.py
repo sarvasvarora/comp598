@@ -324,9 +324,9 @@ async def create_node(node: NodeReq):
             except Exception as e:
                 print(str(e))
                 return {"An error occured in the load balancer."}
-        except:
+        except Exception as e:
             database.delete_node(node_id)
-            return {"An internal error occured while registering the specified node."}
+            return {f"An internal error occured: {str(e)}."}
 
     return {"Unable to add node. Please specify a valid pod ID."}
 
@@ -516,6 +516,8 @@ async def launch_job_on_pod(pod_id: str):
                 except Exception as e:
                     print("An error occured in the load balancer")
                     print(str(e))
+            # Delete this line
+            #return 
     
     return {"There are no NEW nodes under the specified pod. Job cannot be launched. Try out later."}
 
@@ -684,6 +686,8 @@ async def enable_elasticity(podRange: PodElasticityRange):
     try:
         updated_pod = database.enable_pod_elasticity(pod_id, rangeInfo['lower_size'], rangeInfo['upper_size'])
 
+        # TODO: Add the checks with min/max num_nodes
+
         # Elasticity Manager should be able to communicate with the proxy
         PROXY_SOCKET = None
         if updated_pod['name'] == 'HEAVY_POD':
@@ -695,7 +699,7 @@ async def enable_elasticity(podRange: PodElasticityRange):
         
         # Calling 'monitor_pod_elasticity' every 5 seconds
         # TODO: Configure the frequency!
-        elasticity_timer = RepeatedTimer(10, monitor_pod_elasticity, pod_id, database, PROXY_SOCKET)
+        elasticity_timer = RepeatedTimer(15, monitor_pod_elasticity, pod_id, database, PROXY_SOCKET)
         ELASTICITY_TIMERS[pod_id] = elasticity_timer
         ELASTICITY_TIMERS[pod_id].start()
 
@@ -709,6 +713,7 @@ async def disable_elasticity(pod_id: str):
 
     # First verify the given pod_id
     pod = database.get_pod(pod_id)
+
     if not pod:
         return {f"Error. The specified pod with podId doesn't exist."}
     

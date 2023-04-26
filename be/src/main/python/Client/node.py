@@ -75,7 +75,6 @@ def log(node_id: str = Argument(..., help='Node ID to fetch the logs for')):
         print_json(data=res.json())
     except JSONDecodeError:
         print(res.text)
-
-
+    
 if __name__ == "__main__":
     app()
