@@ -11,6 +11,7 @@ from .env import *
 from .job_runner import *
 from .elasticity_manager import *
 import requests
+from random import randint
 
 # create new sockets for each type of proxy
 HEAVY_SOCKET = socket.socket()
@@ -430,7 +431,6 @@ async def read_node_stats(node_id: str):
 
     return {"Error. Node_id is not valid for reading the stats."}
 
-
 ################
 # JOB ENDPOINTS
 ################
@@ -700,6 +700,22 @@ async def enable_elasticity(podRange: PodElasticityRange):
         updated_pod = database.enable_pod_elasticity(pod_id, rangeInfo['lower_size'], rangeInfo['upper_size'])
 
         # TODO: Add the checks with min/max num_nodes
+        num_nodes = len(pod['nodes'])
+
+        # Should register a NEW node for the pod
+        if num_nodes < rangeInfo['lower_size']:
+            for i in range(rangeInfo['lower_size'] - num_nodes):
+                # Register a new node
+                register_extra_node(pod, pod_id)
+
+        # Now check if enough ONLINE nodes exist ---> If not, change NEW ones to ONLINE
+        num_online = database.get_pod_num_online_node(pod_id)
+        if num_online < rangeInfo['lower_size']:
+            for i in range(rangeInfo['lower_size'] - num_online):
+                # Change the NEW nodes to ONLINE
+                add_extra_online_nodes(pod, pod_id)
+
+        # TODO: Should add checks for rangeInfo['upper_size'] also
 
         # Elasticity Manager should be able to communicate with the proxy
         PROXY_SOCKET = None
@@ -710,7 +726,6 @@ async def enable_elasticity(podRange: PodElasticityRange):
         elif updated_pod['name'] == 'LIGHT_POD':
             PROXY_SOCKET = LIGHT_SOCKET
         
-        # Calling 'monitor_pod_elasticity' every 5 seconds
         # TODO: Configure the frequency!
         elasticity_timer = RepeatedTimer(15, monitor_pod_elasticity, pod_id, database, PROXY_SOCKET)
         ELASTICITY_TIMERS[pod_id] = elasticity_timer
@@ -742,4 +757,126 @@ async def disable_elasticity(pod_id: str):
     except Exception as e:
         return {'message': 500, 'Error': str(e)}
 
+# Register one node with NEW status under the pod
+def register_extra_node(pod, pod_id):
+    node = {}
 
+    # Name appended with a random 8digit number
+    name = f"elastic_extra_{randint(10**7, (10**8)-1)}"
+    node['name'] = name
+    node['podId'] = pod_id
+
+    node['status'] = NodeStatus.NEW
+
+    # Set the cpu and memory config of the node
+    Pod_Host = None
+    jobType = None
+    proxy_socket = None
+    if pod['name'] == 'HEAVY_POD':
+        node['cpu'] = 0.8
+        node['memory'] = 500
+        Pod_Host = HEAVY_HOST
+        jobType = "heavy"
+        proxy_socket = HEAVY_SOCKET
+    elif pod['name'] == 'MEDIUM_POD':
+        node['cpu'] = 0.5
+        node['memory'] = 300
+        Pod_Host = MEDIUM_HOST
+        jobType = "medium"
+        proxy_socket = MEDIUM_SOCKET
+    elif pod['name'] == 'LIGHT_POD':
+        node['cpu'] = 0.3
+        node['memory'] = 100
+        Pod_Host = LIGHT_HOST
+        jobType = "light"
+        proxy_socket = LIGHT_SOCKET
+
+    node_id = database.add_node(node)
+
+    if node_id is not None:
+        # send msg to proxy to create node in the backend
+        try:
+            msg = json.dumps({
+                "cmd": "node register",
+                "nodeName": database.get_node(node_id).get('name'),
+                "podName": pod['name']
+            }).encode('utf-8')
+            proxy_socket.send(msg)
+            resp = json.loads(proxy_socket.recv(8192).decode('utf-8'))
+            print(resp)
+
+            # Add node to the lb [with default new status]
+            print(f"Sending this uri to the load balancer {Pod_Host}:{resp['port']}")
+            headers = {
+                "Content-Type": "application/json",
+                "accept": "application/json"
+            }
+            data = json.dumps({
+                "name": node['name'],
+                "nodeId": node_id,
+                "podId": node['podId'],
+                "uri": f"{Pod_Host}:{resp['port']}",
+            })
+            res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes", data=data, headers=headers)
+            print(res.json())
+            return
+
+        except Exception as e:
+            print(f"An error occured in adding an extra node: {str(e)}")
+            return
+
+# Converts one of the new nodes to online node
+def add_extra_online_nodes(pod, pod_id):
+    for n in pod['nodes']:
+        node = database.get_node(n)
+        if node['status'] == NodeStatus.ONLINE or node['status'] == NodeStatus.ONLINE.value:
+            continue 
+        else:
+            # Found a NEW node      ------>     Launch a job on it + update database + let the LB know
+            
+            # Switch status to ONLINE 
+            node["status"] = NodeStatus.ONLINE
+                
+            # Start the HTTP web server on the node
+            try:
+                if pod['name'] == 'HEAVY_POD':
+                    jobType = "heavy"
+                    proxy_socket = HEAVY_SOCKET
+                elif pod['name'] == 'MEDIUM_POD':
+                    jobType = "medium"
+                    proxy_socket = MEDIUM_SOCKET
+                if pod['name'] == 'LIGHT_POD':
+                    jobType = "light"
+                    proxy_socket = LIGHT_SOCKET
+
+                msg = json.dumps({
+                    "cmd": "job launch on pod",
+                    "nodeName": node['name'],
+                    "podName": pod['name'],
+                    "type": jobType, 
+                }).encode('utf-8')
+
+                proxy_socket.send(msg)
+                resp = json.loads(proxy_socket.recv(8192).decode('utf-8'))
+                print(resp)
+
+            except Exception as e:
+                return {f"Internal server error. {str(e)}"}
+
+            # Notify the laod balancer
+            if pod["status"] == PodStatus.RUNNING:
+                print("Notify the new ONLINE node to the LB")
+                headers = {
+                    "Content-Type": "application/json",
+                    "accept": "application/json"
+                }
+                try:
+                    data = json.dumps({
+                        "status": "online"
+                    })
+                    res = requests.post(f"http://{LOAD_BALANCER_HOST}:{LOAD_BALANCER_PORT}/cloud/nodes/{n}", data=data, headers=headers)
+                    print(res.json())
+                    return
+                except Exception as e:
+                    print(f"An error occured in the load balancer: {str(e)}")
+                    return

@@ -173,9 +173,9 @@ class Database():
             self._disable_haproxy_node(node_id)
 
     def delete_node(self, node_id: str) -> None:
-        node = self.nodes.pop(node_id)
         self.pods[node['podId']]['nodes'].remove(node_id)
         self._delete_haproxy_node(node_id)
+        node = self.nodes.pop(node_id)
 
     def get_node(self, node_id: str) -> dict:
         return self.nodes.get(node_id, None)
